@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --ink: #171614;
+  --paper: #f1efe9;
+  --paper-deep: #e5e0d7;
+  --red: #d72d34;
+  --muted: #76716a;
+  --line: rgba(23, 22, 20, .18);
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'DM Sans', Arial, sans-serif;
+  --pad: clamp(1.25rem, 4vw, 4.5rem);
+  --section: clamp(6rem, 12vw, 11rem);
+}

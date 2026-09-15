@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.playwright-cli/
+*.log
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+ferreira-desktop.png
+ferreira-mobile.png
+.DS_Store

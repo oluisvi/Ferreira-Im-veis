@@ -1,0 +1,20 @@
+.properties { padding: var(--section) var(--pad); }
+.filterbar { min-height: 5rem; border-block: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; font-size: .67rem; text-transform: uppercase; letter-spacing: .11em; }
+.filterbar > div { display: flex; gap: .35rem; }
+.filterbar button { border: 0; background: transparent; color: var(--muted); padding: .65rem .85rem; cursor: pointer; }
+.filterbar button.is-active { color: white; background: var(--ink); }
+.filterbar output { justify-self: end; color: var(--muted); }
+.property-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6rem 1.5rem; padding-top: 6rem; align-items: start; }
+.property { grid-column: span 5; }
+.property--2 { grid-column: 7 / span 6; margin-top: 13rem; }
+.property--3 { grid-column: 2 / span 7; }
+.property__image { overflow: hidden; background: var(--paper-deep); aspect-ratio: 4/5; position: relative; clip-path: polygon(0 0, 88% 0, 100% 12%, 100% 100%, 0 100%); }
+.property--2 .property__image { aspect-ratio: 16/11; clip-path: polygon(0 0, 100% 0, 100% 88%, 91% 100%, 0 100%); }
+.property--3 .property__image { aspect-ratio: 16/9; }
+.property__image img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+.property:hover img { transform: scale(1.025); }
+.property__meta { display: flex; justify-content: space-between; margin-top: 1.15rem; color: var(--muted); font-size: .59rem; text-transform: uppercase; letter-spacing: .12em; }
+.property h3 { font-family: var(--serif); font-weight: 400; font-size: clamp(2.1rem, 3.5vw, 4rem); line-height: .98; margin: 1.2rem 0 .7rem; }
+.property p { color: var(--muted); line-height: 1.6; max-width: 30rem; }
+.property small { display: block; color: var(--red); text-transform: uppercase; letter-spacing: .1em; font-size: .56rem; margin: 1.2rem 0; }
+.property > a { display: flex; justify-content: space-between; border-bottom: 1px solid var(--ink); padding: .8rem 0; text-transform: uppercase; letter-spacing: .1em; font-size: .62rem; }
