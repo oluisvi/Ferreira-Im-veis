@@ -5,7 +5,8 @@ import { About } from './components/About'
 import { Process } from './components/Process'
 import { Contact } from './components/Contact'
 import { Footer } from './components/Footer'
+import { IntroPortal } from './components/IntroPortal'
 
 export default function App() {
-  return <><Header /><main id="conteudo"><Hero /><PropertyDiscovery /><About /><Process /><Contact /></main><Footer /></>
+  return <><IntroPortal /><Header /><main id="conteudo"><Hero /><PropertyDiscovery /><About /><Process /><Contact /></main><Footer /></>
 }
