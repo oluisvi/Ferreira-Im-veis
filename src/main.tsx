@@ -7,6 +7,7 @@ import './styles/hero.css'
 import './styles/properties.css'
 import './styles/content.css'
 import './styles/motion.css'
+import './styles/contact-roof-hotfix.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,0 +1,58 @@
+/* Contact section roof alignment hotfix
+   Keeps the roof motif, but moves it upward and centers it so it frames
+   the section without harming legibility of the small heading text. */
+
+.contact {
+  isolation: isolate;
+}
+
+.contact__roof {
+  position: absolute;
+  left: 50%;
+  top: clamp(-1.25rem, 0.8vw, 0.25rem);
+  transform: translateX(-50%);
+  width: min(54rem, 88vw);
+  height: 18rem;
+  opacity: 0.08;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.contact__roof i {
+  position: absolute;
+  top: 10.5rem;
+  width: 52%;
+  height: 1px;
+  background: white;
+}
+
+.contact__roof i:first-child {
+  left: -1%;
+  transform: rotate(-31deg);
+  transform-origin: right;
+}
+
+.contact__roof i:last-child {
+  right: -1%;
+  transform: rotate(31deg);
+  transform-origin: left;
+}
+
+.contact > *:not(.contact__roof) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 800px) {
+  .contact__roof {
+    top: 0.5rem;
+    width: 92vw;
+    height: 12rem;
+    opacity: 0.06;
+  }
+
+  .contact__roof i {
+    top: 6.8rem;
+    width: 58%;
+  }
+}
