@@ -8,7 +8,14 @@ export function Hero() {
       <div className="hero__title"><h1>Espaços para a próxima parte da <em>sua história.</em></h1></div>
       <div className="hero__visual">
         <ArchitecturalFrame />
-        <img src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=2000&q=88" alt="Arquitetura residencial contemporânea, imagem ilustrativa" />
+        <img
+          data-hero-image="critical"
+          src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=2000&q=88"
+          alt="Arquitetura residencial contemporânea, imagem ilustrativa"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+        />
         <span className="hero__image-note">Imagem de ambientação</span>
       </div>
       <div className="hero__aside">
