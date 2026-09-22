@@ -21,7 +21,7 @@ export function Hero() {
       <div className="hero__aside">
         <p>Encontrar um imóvel é reconhecer o lugar onde a vida pode acontecer. A busca começa pela sua história.</p>
         <div className="hero__actions">
-          <a className="button button--dark" href="#imoveis">Encontrar um imóvel <span>↓</span></a>
+          <a className="button button--dark" href="/imoveis">Ver imóveis disponíveis <span>→</span></a>
           <a className="text-link" href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">Falar no WhatsApp ↗</a>
         </div>
       </div>

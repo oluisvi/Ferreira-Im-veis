@@ -8,6 +8,7 @@ import './styles/properties.css'
 import './styles/content.css'
 import './styles/motion.css'
 import './styles/contact-roof-hotfix.css'
+import './styles/catalog.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,32 +1,32 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
 
+beforeEach(() => {
+  window.history.replaceState({}, '', '/')
+})
+
 describe('Ferreira Imóveis experience', () => {
-  it('presents the brand, navigation and confirmed contact', () => {
+  it('keeps the presentation and exposes the real-estate catalog entry point', () => {
     render(<App />)
-    expect(screen.getByRole('link', { name: /pular para o conteúdo/i })).toHaveAttribute('href', '#conteudo')
-    expect(screen.getByRole('navigation', { name: /principal/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/espaços para a próxima parte/i)
-    expect(screen.getAllByRole('link', { name: /whatsapp/i })[0]).toHaveAttribute('href', expect.stringContaining('wa.me/5512997665886'))
-    expect(screen.getAllByText(/133794-F/).length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: /ver imóveis disponíveis/i })).toHaveAttribute('href', '/imoveis')
+    expect(screen.getAllByTestId('property-card')).toHaveLength(3)
   })
 
-  it('filters the clearly-labelled visual concepts', () => {
+  it('renders the catalog route with filters', () => {
+    window.history.replaceState({}, '', '/imoveis')
     render(<App />)
-    expect(screen.getAllByText(/conceito visual/i)).toHaveLength(3)
-    fireEvent.click(screen.getByRole('button', { name: 'Apartamento' }))
-    expect(screen.getAllByText(/conceito visual/i)).toHaveLength(1)
-    expect(screen.getByText(/cidade por perto/i)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Todos' }))
-    expect(screen.getAllByText(/conceito visual/i)).toHaveLength(3)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/imóveis ativos/i)
+    expect(screen.getByLabelText(/cidade/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/finalidade/i)).toBeInTheDocument()
   })
 
-  it('explains the four-step consultative process', () => {
+  it('renders an individual property route from the fallback catalog', () => {
+    window.history.replaceState({}, '', '/imovel/FI-001')
     render(<App />)
-    expect(screen.getByText('Entender')).toBeInTheDocument()
-    expect(screen.getByText('Selecionar')).toBeInTheDocument()
-    expect(screen.getByText('Visitar')).toBeInTheDocument()
-    expect(screen.getByText('Negociar')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/casa contemporânea/i)
+    expect(screen.getByText(/FI-001/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /chamar no whatsapp/i })).toHaveAttribute('href', expect.stringContaining('FI-001'))
   })
 })

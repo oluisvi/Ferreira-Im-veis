@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/imoveis", "destination": "/index.html" },
+    { "source": "/imovel/:path*", "destination": "/index.html" }
+  ]
+}
