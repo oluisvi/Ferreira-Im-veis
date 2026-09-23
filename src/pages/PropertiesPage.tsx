@@ -6,6 +6,7 @@ import { Header } from '../components/Header'
 import { buildWhatsAppUrl } from '../content/siteContent'
 import { emptyFilters, filterProperties, filtersFromSearchParams } from '../data/propertyCatalog'
 import { useProperties } from '../hooks/useProperties'
+import { trackEvent, trackWhatsAppClick } from '../analytics/tracker'
 
 export function PropertiesPage() {
   const { properties, source, loading } = useProperties()
@@ -18,6 +19,10 @@ export function PropertiesPage() {
     Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value) })
     const next = `${window.location.pathname}${params.size ? `?${params}` : ''}`
     window.history.replaceState({}, '', next)
+  }, [filters])
+  useEffect(() => {
+    const active = Object.fromEntries(Object.entries(filters).filter(([, value]) => value))
+    if (Object.keys(active).length) trackEvent('filter_use', active)
   }, [filters])
 
   const searchSummary = [filters.purpose, filters.type, filters.city, filters.neighborhood].filter(Boolean).join(', ')
@@ -36,7 +41,7 @@ export function PropertiesPage() {
           <CatalogFilters properties={properties} filters={filters} onChange={setFilters} />
           <section className="catalog-results" aria-live="polite">
             {filtered.length > 0 ? filtered.map((property) => <CatalogPropertyCard property={property} key={property.code} />) : (
-              <div className="catalog-empty"><span>Sem resultados</span><h2>Nenhum imóvel combina com estes filtros.</h2><p>Limpe alguns critérios ou peça uma busca personalizada para o Ferreira.</p><div><button type="button" className="button button--dark" onClick={() => setFilters(emptyFilters)}>Limpar filtros</button><a className="button button--accent" href={buildWhatsAppUrl(whatsappMessage)} target="_blank" rel="noreferrer">Pedir ajuda no WhatsApp ↗</a></div></div>
+              <div className="catalog-empty"><span>Sem resultados</span><h2>Nenhum imóvel combina com estes filtros.</h2><p>Limpe alguns critérios ou peça uma busca personalizada para o Ferreira.</p><div><button type="button" className="button button--dark" onClick={() => setFilters(emptyFilters)}>Limpar filtros</button><a className="button button--accent" href={buildWhatsAppUrl(whatsappMessage)} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('empty_results', filters)}>Pedir ajuda no WhatsApp ↗</a></div></div>
             )}
           </section>
         </div>

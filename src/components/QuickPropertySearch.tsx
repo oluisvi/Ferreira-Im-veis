@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { uniquePropertyValues } from '../data/propertyCatalog'
 import { useProperties } from '../hooks/useProperties'
+import { trackEvent } from '../analytics/tracker'
 
 type SearchState = { purpose: string; type: string; city: string; neighborhood: string; maxPrice: string }
 
@@ -19,6 +20,7 @@ export function QuickPropertySearch() {
     event.preventDefault()
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value) })
+    trackEvent('property_search', filters)
     window.location.href = `/imoveis?${params.toString()}`
   }
 

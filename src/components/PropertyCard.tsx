@@ -1,5 +1,6 @@
 import type { PropertyItem } from '../content/siteContent'
 import { buildWhatsAppUrl } from '../content/siteContent'
+import { trackWhatsAppClick } from '../analytics/tracker'
 
 export function PropertyCard({ property, index }: { property: PropertyItem; index: number }) {
   const isConcept = property.isConcept === true
@@ -17,7 +18,7 @@ export function PropertyCard({ property, index }: { property: PropertyItem; inde
       {details && <strong>{details}</strong>}
       <p>{property.description}</p>
       <small>{isConcept ? 'Conceito visual — conteúdo demonstrativo' : specs || 'Imóvel disponível para consulta'}</small>
-      <a href={buildWhatsAppUrl(message)} target="_blank" rel="noreferrer">{isConcept ? 'Conversar sobre este perfil' : 'Conversar sobre este imóvel'} <span>↗</span></a>
+      <a href={buildWhatsAppUrl(message)} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('home_property_card', { propertyType: property.category })}>{isConcept ? 'Conversar sobre este perfil' : 'Conversar sobre este imóvel'} <span>↗</span></a>
     </article>
   )
 }

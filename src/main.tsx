@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { AnalyticsProvider } from './analytics/AnalyticsProvider'
 import './styles/tokens.css'
 import './styles/global.css'
 import './styles/hero.css'
@@ -12,6 +13,6 @@ import './styles/admin.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <><AnalyticsProvider /><App /></>
   </StrictMode>,
 )
