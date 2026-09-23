@@ -1,0 +1,18 @@
+.admin-page { min-height: 100vh; padding: clamp(2rem, 5vw, 5rem); background: #f7f3ec; color: #171614; }
+.admin-shell { max-width: 58rem; margin: 0 auto; }
+.admin-header { margin-bottom: 2rem; }
+.admin-header span { display: block; font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: #8a8178; margin-bottom: .75rem; }
+.admin-header h1 { margin: 0; font-size: clamp(2.4rem, 7vw, 5rem); line-height: .9; letter-spacing: -.06em; }
+.admin-header p { color: #6f675f; max-width: 34rem; line-height: 1.6; }
+.admin-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 1.25rem; border: 1px solid rgba(23,22,20,.14); background: rgba(255,255,255,.5); }
+.admin-form label { display: grid; gap: .45rem; color: #6f675f; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; }
+.admin-form input, .admin-form select, .admin-form textarea { width: 100%; border: 1px solid rgba(23,22,20,.18); background: white; color: #171614; padding: .9rem; font: inherit; font-size: .9rem; letter-spacing: 0; text-transform: none; }
+.admin-form textarea { resize: vertical; }
+.admin-form__wide, .admin-form button, .admin-form output { grid-column: 1 / -1; }
+.admin-form button { min-height: 3.4rem; border: 0; background: #171614; color: white; text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
+.admin-form button:disabled { opacity: .65; cursor: wait; }
+.admin-form output { min-height: 1.4rem; color: #8d211c; }
+
+@media (max-width: 720px) {
+  .admin-form { grid-template-columns: 1fr; padding: 1rem; }
+}

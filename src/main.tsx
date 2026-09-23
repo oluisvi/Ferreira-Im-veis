@@ -7,6 +7,10 @@ import './styles/hero.css'
 import './styles/properties.css'
 import './styles/content.css'
 import './styles/motion.css'
-import './styles/catalog.css'
+import './styles/admin.css'
 
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)

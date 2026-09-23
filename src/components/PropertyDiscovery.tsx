@@ -1,18 +1,38 @@
+import { useEffect, useState } from 'react'
+import { propertyConcepts, type PropertyCategory, type PropertyItem } from '../content/siteContent'
+import { getProperties } from '../content/propertiesData'
 import { PropertyCard } from './PropertyCard'
-import { useProperties } from '../hooks/useProperties'
+
+type Filter = 'Todos' | PropertyCategory
+const filters: Filter[] = ['Todos', 'Casa', 'Apartamento', 'Refúgio']
 
 export function PropertyDiscovery() {
-  const { properties, source } = useProperties()
-  const highlighted = [...properties].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 4)
+  const [active, setActive] = useState<Filter>('Todos')
+  const [properties, setProperties] = useState<PropertyItem[]>(propertyConcepts)
+  const visible = active === 'Todos' ? properties : properties.filter((item) => item.category === active)
+
+  useEffect(() => {
+    let mounted = true
+    getProperties().then((items) => {
+      if (mounted) setProperties(items)
+    })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
     <section className="properties" id="imoveis">
-      <header className="section-heading" data-reveal="rise">
-        <div><span className="section-kicker">Destaques</span><h2>Imóveis em <em>destaque.</em></h2></div>
-        <a className="outline-link" href="/imoveis">Ver todos os imóveis <span>→</span></a>
+      <header className="section-heading">
+        <div><span className="section-kicker">02 · Possibilidades</span><h2>Não é sobre procurar mais.<br /><em>É sobre encontrar melhor.</em></h2></div>
+        <p>Uma curadoria objetiva para transformar anúncios soltos em possibilidades claras de visita e negociação.</p>
       </header>
-      <div className="property-grid">{highlighted.map((property, index) => <PropertyCard property={property} index={index} key={property.code} />)}</div>
-      {source === 'fallback' && <div className="demo-note" data-reveal="line"><strong>Prévia demonstrativa</strong><span>O catálogo oficial pode ser conectado ao Google Sheets sem alterar esta experiência.</span></div>}
+      <div className="filterbar" aria-label="Filtrar conceitos de imóveis">
+        <span>Explore por perfil</span>
+        <div>{filters.map((filter) => <button type="button" className={filter === active ? 'is-active' : ''} aria-pressed={filter === active} onClick={() => setActive(filter)} key={filter}>{filter}</button>)}</div>
+        <output>{String(visible.length).padStart(2, '0')} imóveis</output>
+      </div>
+      <div className="property-grid">{visible.map((property, index) => <PropertyCard property={property} index={index} key={property.id} />)}</div>
     </section>
   )
 }

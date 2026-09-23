@@ -1,8 +1,14 @@
 node_modules/
 dist/
+.env
+.env.*
+!.env.example
 .playwright-cli/
 *.log
 *.tsbuildinfo
+imagens-ferreira/
+image-manifest.json
+sheet-rows.json
 vite.config.js
 vite.config.d.ts
 ferreira-desktop.png
