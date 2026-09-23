@@ -1,4 +1,4 @@
-import { type PropertyCategory, type PropertyListing } from './siteContent'
+import { propertyConcepts, type PropertyCategory, type PropertyListing } from './siteContent'
 
 export const SHEET_CSV_URL = '/api/properties'
 
@@ -60,7 +60,7 @@ export function rowsToProperties(csv: string): PropertyListing[] {
 }
 
 export async function getProperties() {
-  if (!SHEET_CSV_URL) return []
+  if (!SHEET_CSV_URL) return propertyConcepts
 
   try {
     const response = await fetch(SHEET_CSV_URL)
@@ -82,11 +82,13 @@ export async function getProperties() {
       parking: item.parkingSpaces ? String(item.parkingSpaces) : undefined,
       sourceUrl: undefined,
       isConcept: false as const,
-    }))
-    return properties
+    })).filter((item) => item.title && item.image)
+
+    // Nunca mistura os dois catálogos: havendo imóveis reais, usa apenas eles.
+    return properties.length > 0 ? properties : propertyConcepts
   } catch (error) {
     console.warn('Could not load properties from Google Sheets.', error)
-    return []
+    return propertyConcepts
   }
 }
 
