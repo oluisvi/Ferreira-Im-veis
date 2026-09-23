@@ -1,6 +1,6 @@
 import { propertyConcepts, type PropertyCategory, type PropertyListing } from './siteContent'
 
-export const SHEET_CSV_URL = (import.meta.env.VITE_PROPERTIES_CSV_URL as string | undefined) || '/api/properties'
+export const SHEET_CSV_URL = '/api/properties'
 
 type PropertyRow = Record<string, string>
 
@@ -65,7 +65,24 @@ export async function getProperties() {
   try {
     const response = await fetch(SHEET_CSV_URL)
     if (!response.ok) throw new Error(`CSV request failed: ${response.status}`)
-    const properties = rowsToProperties(await response.text())
+    const payload = await response.json() as { properties?: Array<Record<string, unknown>> }
+    const properties = (payload.properties ?? []).map((item, index) => ({
+      id: String(item.code || `property-${index}`),
+      category: normalizeCategory(String(item.type || 'Casa')),
+      eyebrow: [item.purpose, item.city].filter(Boolean).join(' · '),
+      title: String(item.title || ''),
+      description: String(item.description || ''),
+      image: String(item.mainImage || ''),
+      imageAlt: `Imagem do imóvel ${String(item.title || index + 1)}`,
+      price: item.price ? String(item.price) : undefined,
+      location: [item.address, item.neighborhood, item.city].filter(Boolean).join(', '),
+      area: item.area ? String(item.area) : undefined,
+      bedrooms: item.bedrooms ? String(item.bedrooms) : undefined,
+      bathrooms: item.bathrooms ? String(item.bathrooms) : undefined,
+      parking: item.parkingSpaces ? String(item.parkingSpaces) : undefined,
+      sourceUrl: undefined,
+      isConcept: false as const,
+    }))
     return properties.length ? properties : propertyConcepts
   } catch (error) {
     console.warn('Using fallback property concepts because the CSV could not be loaded.', error)

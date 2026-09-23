@@ -92,7 +92,7 @@ function normalizeProperty(record) {
 function getSheetUrl() {
   if (process.env.GOOGLE_SHEET_CSV_URL) return process.env.GOOGLE_SHEET_CSV_URL
   const sheetId = process.env.GOOGLE_SHEET_ID
-  if (!sheetId) return null
+  if (!sheetId) return 'https://docs.google.com/spreadsheets/d/1EcXVnUFR6N1IPiMvEPH5-AyGrvWQXR3T517-qmhfgqY/export?format=csv&gid=1830906592'
   const sheetName = encodeURIComponent(process.env.GOOGLE_SHEET_NAME || 'Imoveis')
   return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`
 }
