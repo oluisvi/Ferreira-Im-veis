@@ -51,3 +51,240 @@
   .property-carousel__footer { align-items:flex-end; }
   .property-carousel__footer .button { min-height:3rem; }
 }
+
+.property-carousel__mobile-kicker { display:none; }
+
+@media (max-width: 720px) {
+  .properties {
+    padding-top: clamp(4.25rem, 15vw, 5.5rem);
+    padding-bottom: 5rem;
+  }
+
+  .properties .section-heading {
+    position: relative;
+    display: grid;
+    align-items: start;
+    gap: 1.2rem;
+    margin-bottom: 1.35rem;
+    padding: 0 0 1.5rem;
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .properties .section-heading::after {
+    content: '02';
+    position: absolute;
+    right: -.15rem;
+    top: -.85rem;
+    z-index: 0;
+    color: var(--accent);
+    font-family: var(--serif);
+    font-size: clamp(5rem, 27vw, 7.2rem);
+    line-height: 1;
+    opacity: .065;
+    pointer-events: none;
+  }
+  .properties .section-heading > * { position: relative; z-index: 1; }
+  .properties .section-heading h2 {
+    max-width: 8.6em;
+    font-size: clamp(2.45rem, 11.7vw, 3.35rem);
+    line-height: .94;
+  }
+  .properties .section-heading h2 br { display: none; }
+  .properties .section-heading p {
+    max-width: 31rem;
+    margin: 0;
+    padding-left: .9rem;
+    border-left: 2px solid rgba(170,136,76,.55);
+    color: var(--muted);
+    font-size: .76rem;
+    line-height: 1.65;
+  }
+
+  .filterbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .75rem .9rem;
+    min-height: 0;
+    padding: .9rem 0 1rem;
+    border-top: 0;
+  }
+  .filterbar > span {
+    align-self: center;
+    color: var(--ink);
+    font-size: .56rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+  }
+  .filterbar output {
+    align-self: center;
+    min-width: 4.2rem;
+    padding: .45rem .65rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    text-align: center;
+    font-size: .53rem;
+    background: rgba(255,253,249,.55);
+  }
+  .filterbar > div {
+    grid-column: 1 / -1;
+    order: 3;
+    display: flex;
+    gap: .45rem;
+    overflow-x: auto;
+    margin-inline: calc(var(--pad) * -1);
+    padding: .1rem var(--pad) .45rem;
+    scroll-padding-inline: var(--pad);
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .filterbar > div::-webkit-scrollbar { display:none; }
+  .filterbar button {
+    flex: 0 0 auto;
+    min-height: 2.45rem;
+    padding: .65rem .95rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255,253,249,.72);
+    color: var(--muted);
+    font-size: .58rem;
+    scroll-snap-align: start;
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .filterbar button.is-active {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: white;
+    box-shadow: 0 .45rem 1.2rem rgba(20,19,16,.12);
+  }
+
+  .property-carousel { padding-top: 1.6rem; }
+  .property-carousel__topline {
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: .95rem;
+  }
+  .property-carousel__mobile-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    color: var(--accent-strong);
+    font-size: .56rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .13em;
+  }
+  .property-carousel__mobile-kicker::before {
+    content: '';
+    width: 1.8rem;
+    height: 1px;
+    background: var(--accent);
+  }
+  .property-carousel__topline > p { display:none; }
+  .property-carousel__controls {
+    margin-left: auto;
+    gap: .25rem;
+    padding: .2rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+  .property-carousel__controls button {
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 0;
+    background: transparent;
+    font-size: .78rem;
+  }
+  .property-carousel__controls button:active { transform: scale(.94); }
+  .property-carousel__controls span {
+    min-width: 3.55rem;
+    font-size: .54rem;
+  }
+
+  .property-carousel__track {
+    gap: .72rem;
+    margin-inline: calc(var(--pad) * -1);
+    padding: .25rem var(--pad) 1.15rem;
+    scroll-padding-inline: var(--pad);
+  }
+  .property-carousel__slide {
+    flex: 0 0 calc(100% - 2.45rem);
+    scroll-snap-align: start;
+  }
+  .property-carousel .property {
+    overflow: hidden;
+    padding: .55rem .55rem .25rem;
+    border: 1px solid rgba(20,19,16,.09);
+    border-radius: .9rem;
+    background: var(--surface);
+    box-shadow: 0 .85rem 2.4rem rgba(42,34,22,.075);
+  }
+  .property-carousel .property__image,
+  .property-carousel .property--2 .property__image,
+  .property-carousel .property--3 .property__image {
+    aspect-ratio: 16/11;
+    border-radius: .62rem;
+  }
+  .property-carousel .property__meta {
+    margin: .85rem .25rem 0;
+    padding-bottom: .65rem;
+    border-bottom: 1px solid var(--line);
+    font-size: .52rem;
+  }
+  .property-carousel .property h3 {
+    margin: .95rem .25rem .7rem;
+    font-size: clamp(1.9rem, 9vw, 2.55rem);
+    line-height: .98;
+  }
+  .property-carousel .property strong,
+  .property-carousel .property p,
+  .property-carousel .property small {
+    margin-left: .25rem;
+    margin-right: .25rem;
+  }
+  .property-carousel .property strong { font-size: .65rem; line-height: 1.45; }
+  .property-carousel .property p { font-size: .72rem; line-height: 1.58; }
+  .property-carousel .property small { margin-top: .85rem; margin-bottom: .85rem; font-size: .5rem; line-height: 1.45; }
+  .property-carousel .property > a {
+    margin: .15rem -.05rem 0;
+    padding: .95rem .35rem;
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+    font-size: .57rem;
+  }
+
+  .property-carousel__footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: .45rem;
+  }
+  .property-carousel__dots {
+    justify-content: center;
+    align-items: center;
+    gap: .38rem;
+    min-height: 1.25rem;
+  }
+  .property-carousel__dots button {
+    width: .42rem;
+    height: .42rem;
+    transition: width .28s ease, border-radius .28s ease, background .2s ease;
+  }
+  .property-carousel__dots button.is-active {
+    width: 1.75rem;
+    border-radius: 999px;
+    transform: none;
+  }
+  .property-carousel__footer .button {
+    width: 100%;
+    min-height: 3.65rem;
+    padding-inline: 1.1rem;
+  }
+  .property-carousel__loading { min-height: 15rem; }
+}
+
+@media (max-width: 380px) {
+  .properties .section-heading h2 { font-size: 2.3rem; }
+  .property-carousel__slide { flex-basis: calc(100% - 1.65rem); }
+  .property-carousel__controls span { min-width: 3.1rem; }
+}

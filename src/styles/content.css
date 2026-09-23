@@ -49,3 +49,94 @@
   .contact { grid-template-columns: 1fr auto; padding-block: 5rem; }
   .contact__cta { justify-self: end; }
 }
+
+/* Responsive contact/footer refinement */
+@media (max-width: 720px) {
+  .contact {
+    min-height: 35rem;
+    padding: 4.25rem var(--pad) 3.4rem;
+    gap: 1.75rem;
+    align-content: center;
+  }
+  .contact__copy { max-width: 32rem; }
+  .contact h2 {
+    max-width: 9.4em;
+    font-size: clamp(2.55rem, 11.7vw, 3.35rem);
+    line-height: .94;
+  }
+  .contact p {
+    max-width: 29rem;
+    margin: 1.2rem 0 1.35rem;
+    font-size: .82rem;
+    line-height: 1.7;
+  }
+  .contact__proofs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: .55rem;
+    max-width: 29rem;
+  }
+  .contact__proofs span {
+    min-height: 2.65rem;
+    display: flex;
+    align-items: center;
+    padding: .65rem .75rem;
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: .45rem;
+    background: rgba(255,255,255,.035);
+    color: rgba(255,255,255,.68);
+    font-size: .58rem;
+    line-height: 1.35;
+  }
+  .contact__proofs span:last-child { grid-column: 1 / -1; }
+  .contact__cta {
+    width: 100%;
+    min-width: 0;
+    min-height: 3.8rem;
+  }
+
+  /* Keep the roof motif, but make it a corner signature instead of crossing the copy. */
+  .contact__roof {
+    left: auto;
+    right: -8.5rem;
+    top: auto;
+    bottom: -1.75rem;
+    width: 25rem;
+    height: 18rem;
+    opacity: .13;
+    transform: rotate(-5deg);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.28) 30%, #000 58%);
+    mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.28) 30%, #000 58%);
+  }
+  .contact__roof i { top: 7rem; width: 58%; }
+  .contact__roof i:first-child { left: 0; transform: rotate(-33deg); }
+  .contact__roof i:nth-child(2) { right: 0; transform: rotate(33deg); }
+  .contact__roof span {
+    left: 24%;
+    right: 18%;
+    bottom: 22%;
+    background: rgba(210,178,116,.85);
+  }
+
+  .footer {
+    padding-top: 3.5rem;
+    gap: 2.2rem;
+  }
+  .footer__brand { padding-bottom: .25rem; }
+  .footer__brand p { max-width: 24rem; }
+  .footer__social,
+  .footer__contact {
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(246,243,236,.1);
+  }
+  .footer__social a,
+  .footer__contact a { min-height: 2.65rem; align-items: center; }
+  .footer__bottom { gap: .6rem; }
+}
+
+@media (max-width: 380px) {
+  .contact { min-height: 36rem; }
+  .contact__proofs { grid-template-columns: 1fr; }
+  .contact__proofs span:last-child { grid-column: auto; }
+  .contact__roof { right: -10rem; width: 24rem; opacity: .11; }
+}
