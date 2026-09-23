@@ -30,9 +30,11 @@
 .catalog-card h2 { margin:.55rem 0 .75rem; font-size:1.35rem; line-height:1.15; }
 .catalog-card__facts { display:flex; flex-wrap:wrap; gap:.45rem .8rem; color:var(--muted); font-size:.62rem; }
 .catalog-card__price { display:block; margin-top:1rem; font-size:1.05rem; }
-.catalog-card__actions { display:grid; grid-template-columns:1fr 1fr; margin-top:1rem; border-top:1px solid var(--line); }
-.catalog-card__actions a { display:flex; justify-content:space-between; align-items:center; min-height:3rem; padding:.7rem .2rem 0; font-size:.58rem; text-transform:uppercase; letter-spacing:.06em; }
-.catalog-card__actions a + a { justify-content:flex-end; color:var(--accent-strong); }
+.catalog-card__actions { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--line); }
+.catalog-card__contact { display:flex; justify-content:space-between; align-items:center; min-height:3.15rem; padding:.85rem 1rem; border:1px solid var(--ink); border-radius:.45rem; background:var(--ink); color:var(--paper); font-size:.58rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; transition:background .25s ease, border-color .25s ease, color .25s ease, transform .25s ease; }
+.catalog-card__contact span { color:var(--accent); font-size:.9rem; }
+.catalog-card__contact:hover { border-color:var(--accent); background:var(--accent); color:var(--ink); transform:translateY(-2px); }
+.catalog-card__contact:hover span { color:var(--ink); }
 .catalog-empty { padding:4rem 0; max-width:44rem; }
 .catalog-empty > span { color:var(--accent-strong); text-transform:uppercase; letter-spacing:.14em; font-size:.6rem; }
 .catalog-empty h2 { margin:.8rem 0; font-size:clamp(2.4rem,9vw,4.5rem); line-height:.96; }

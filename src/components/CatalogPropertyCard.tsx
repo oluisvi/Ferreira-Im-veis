@@ -14,7 +14,7 @@ export function CatalogPropertyCard({ property }: { property: Property }) {
         <h2><a href={getPropertyRoute(property)}>{property.title}</a></h2>
         <div className="catalog-card__facts">{formatArea(property.area) && <span>{formatArea(property.area)}</span>}{property.bedrooms !== null && <span>{property.bedrooms} quartos</span>}{property.bathrooms !== null && <span>{property.bathrooms} banheiros</span>}{property.parkingSpaces !== null && <span>{property.parkingSpaces} vagas</span>}</div>
         <strong className="catalog-card__price">{formatCurrency(property.price)}</strong>
-        <div className="catalog-card__actions"><a href={getPropertyRoute(property)}>Ver detalhes <span>→</span></a><a className="catalog-card__whatsapp" href={buildPropertyWhatsAppUrl(property)} target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a></div>
+        <div className="catalog-card__actions"><a className="catalog-card__contact" href={buildPropertyWhatsAppUrl(property)} target="_blank" rel="noreferrer">Conversar sobre este imóvel <span>↗</span></a></div>
       </div>
     </article>
   )
