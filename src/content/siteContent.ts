@@ -1,3 +1,4 @@
+export const BRAND_NAME = 'Ferreira Corretor de Imóveis'
 export const CRECI = '133794-F'
 export const WHATSAPP_NUMBER = '5512997665886'
 export const WHATSAPP_NUMBER_DISPLAY = '(12) 99766-5886'
@@ -38,8 +39,9 @@ export type PropertyItem = PropertyConcept | PropertyListing
 
 export const navigation = [
   { label: 'Início', href: '#inicio' },
-  { label: 'Imóveis', href: '#imoveis' },
+  { label: 'Imóveis', href: '/imoveis' },
   { label: 'Sobre', href: '#sobre' },
+  { label: 'Como funciona', href: '/#servicos' },
   { label: 'Contato', href: '#contato' },
 ] as const
 
