@@ -1,4 +1,4 @@
-import { propertyConcepts, type PropertyCategory, type PropertyListing } from './siteContent'
+import { type PropertyCategory, type PropertyListing } from './siteContent'
 
 export const SHEET_CSV_URL = '/api/properties'
 
@@ -60,7 +60,7 @@ export function rowsToProperties(csv: string): PropertyListing[] {
 }
 
 export async function getProperties() {
-  if (!SHEET_CSV_URL) return propertyConcepts
+  if (!SHEET_CSV_URL) return []
 
   try {
     const response = await fetch(SHEET_CSV_URL)
@@ -83,10 +83,10 @@ export async function getProperties() {
       sourceUrl: undefined,
       isConcept: false as const,
     }))
-    return properties.length ? properties : propertyConcepts
+    return properties
   } catch (error) {
-    console.warn('Using fallback property concepts because the CSV could not be loaded.', error)
-    return propertyConcepts
+    console.warn('Could not load properties from Google Sheets.', error)
+    return []
   }
 }
 

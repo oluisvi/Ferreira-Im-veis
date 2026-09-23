@@ -4,8 +4,13 @@ import { CRECI } from '../content/siteContent'
 export const INTRO_MIN_HOLD_MS = 3000
 export const INTRO_MAX_WAIT_MS = 5000
 export const INTRO_EXIT_MS = 760
+export const INTRO_FAST_MIN_HOLD_MS = 900
+export const INTRO_FAST_MAX_WAIT_MS = 1600
+export const INTRO_FAST_EXIT_MS = 360
+export const INTRO_SEEN_STORAGE_KEY = 'ferreira:intro-seen:v1'
 
 type IntroPhase = 'waiting' | 'revealing'
+type IntroPace = 'normal' | 'fast'
 type IntroPortalProps = { waitForReady?: () => Promise<void> }
 
 type TimedPathProps = {
@@ -18,6 +23,17 @@ function hasReducedMotion() { return Boolean(window.matchMedia?.('(prefers-reduc
 function shouldPlayIntro() {
   if (typeof window === 'undefined') return false
   return !hasReducedMotion()
+}
+function getIntroPace(): IntroPace {
+  if (typeof window === 'undefined') return 'normal'
+  try {
+    return window.localStorage.getItem(INTRO_SEEN_STORAGE_KEY) === '1' ? 'fast' : 'normal'
+  } catch {
+    return 'normal'
+  }
+}
+function rememberIntroVisit() {
+  try { window.localStorage.setItem(INTRO_SEEN_STORAGE_KEY, '1') } catch { /* storage can be unavailable in private/restricted contexts */ }
 }
 function decodeImage(image: HTMLImageElement) { return typeof image.decode === 'function' ? image.decode().catch(() => undefined) : Promise.resolve() }
 function waitForImage(image: HTMLImageElement | null) {
@@ -72,7 +88,8 @@ function TimedPath({ d, className, delay = 0 }: TimedPathProps) {
   return <path d={d} className={className} style={{ '--piece-delay': `${delay}ms` } as CSSProperties} />
 }
 
-function AnimatedLogo() {
+function AnimatedLogo({ pace }: { pace: IntroPace }) {
+  const delayFor = (milliseconds: number) => pace === 'fast' ? Math.round(milliseconds * 0.28) : milliseconds
   return (
     <svg
       className="intro-logo-svg"
@@ -110,20 +127,20 @@ function AnimatedLogo() {
       </defs>
 
       <g className="intro-logo-parts" filter="url(#introGoldGlow)">
-        <TimedPath d={FOUNDATION} className="intro-logo-part intro-logo-part--foundation" delay={100} />
-        <TimedPath d={FACADE} className="intro-logo-part intro-logo-part--facade" delay={430} />
+        <TimedPath d={FOUNDATION} className="intro-logo-part intro-logo-part--foundation" delay={delayFor(100)} />
+        <TimedPath d={FACADE} className="intro-logo-part intro-logo-part--facade" delay={delayFor(430)} />
         {RAILS.map((d, index) => (
           <TimedPath
             d={d}
             className="intro-logo-part intro-logo-part--rail"
-            delay={820 + index * 62}
+            delay={delayFor(820 + index * 62)}
             key={d}
           />
         ))}
-        <TimedPath d={DOOR_DETAIL} className="intro-logo-part intro-logo-part--door" delay={1180} />
-        <TimedPath d={ROOF_LEFT} className="intro-logo-part intro-logo-part--roof-left" delay={1600} />
-        <TimedPath d={ROOF_RIGHT} className="intro-logo-part intro-logo-part--roof-right" delay={1600} />
-        <TimedPath d={ROOF_CENTER} className="intro-logo-part intro-logo-part--roof-center" delay={1980} />
+        <TimedPath d={DOOR_DETAIL} className="intro-logo-part intro-logo-part--door" delay={delayFor(1180)} />
+        <TimedPath d={ROOF_LEFT} className="intro-logo-part intro-logo-part--roof-left" delay={delayFor(1600)} />
+        <TimedPath d={ROOF_RIGHT} className="intro-logo-part intro-logo-part--roof-right" delay={delayFor(1600)} />
+        <TimedPath d={ROOF_CENTER} className="intro-logo-part intro-logo-part--roof-center" delay={delayFor(1980)} />
       </g>
 
       <rect
@@ -141,6 +158,7 @@ function AnimatedLogo() {
 
 export function IntroPortal({ waitForReady = waitForCriticalContent }: IntroPortalProps = {}) {
   const [visible, setVisible] = useState(shouldPlayIntro)
+  const [pace] = useState<IntroPace>(getIntroPace)
   const [phase, setPhase] = useState<IntroPhase>('waiting')
   const readinessRef = useRef(waitForReady)
   useEffect(() => { readinessRef.current = waitForReady }, [waitForReady])
@@ -150,22 +168,25 @@ export function IntroPortal({ waitForReady = waitForCriticalContent }: IntroPort
     const timers = new Set<number>()
     const delay = (ms: number) => new Promise<void>((resolve) => { const timer = window.setTimeout(() => { timers.delete(timer); resolve() }, ms); timers.add(timer) })
     document.body.classList.add('intro-active')
-    const minimumHold = delay(INTRO_MIN_HOLD_MS)
-    const safeTimeout = delay(INTRO_MAX_WAIT_MS)
+    rememberIntroVisit()
+    const isFast = pace === 'fast'
+    const minimumHold = delay(isFast ? INTRO_FAST_MIN_HOLD_MS : INTRO_MIN_HOLD_MS)
+    const safeTimeout = delay(isFast ? INTRO_FAST_MAX_WAIT_MS : INTRO_MAX_WAIT_MS)
     const ready = Promise.resolve().then(() => readinessRef.current()).catch(() => undefined)
     void Promise.race([Promise.all([minimumHold, ready]), safeTimeout]).then(async () => {
       if (cancelled) return
       await waitForStablePaint()
       if (cancelled) return
       setPhase('revealing')
-      const timer = window.setTimeout(() => { timers.delete(timer); if (!cancelled) { markIntroAsSeen(); setVisible(false) } }, INTRO_EXIT_MS)
+      const exitMs = pace === 'fast' ? INTRO_FAST_EXIT_MS : INTRO_EXIT_MS
+      const timer = window.setTimeout(() => { timers.delete(timer); if (!cancelled) { markIntroAsSeen(); setVisible(false) } }, exitMs)
       timers.add(timer)
     })
     return () => { cancelled = true; timers.forEach((timer) => window.clearTimeout(timer)); timers.clear(); document.body.classList.remove('intro-active') }
-  }, [visible])
+  }, [visible, pace])
   if (!visible) return null
   return (
-    <div className={`intro-portal intro-portal--${phase}`} data-state={phase} data-testid="intro-portal" aria-hidden="true">
+    <div className={`intro-portal intro-portal--${phase}${pace === 'fast' ? ' intro-portal--fast' : ''}`} data-state={phase} data-pace={pace} data-testid="intro-portal" aria-hidden="true">
       <div className="intro-build">
         <div className="intro-build__draft" aria-hidden="true">
           <i /><i /><i /><i />
@@ -173,7 +194,7 @@ export function IntroPortal({ waitForReady = waitForCriticalContent }: IntroPort
           <span className="intro-build__draft-line intro-build__draft-line--roof" />
         </div>
         <div className="intro-build__logo" aria-hidden="true">
-          <AnimatedLogo />
+          <AnimatedLogo pace={pace} />
           <span className="intro-build__sweep" />
         </div>
         <div className="intro-build__wordmark">

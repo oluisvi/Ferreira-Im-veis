@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { propertyConcepts, type PropertyCategory, type PropertyItem } from '../content/siteContent'
+import { type PropertyCategory, type PropertyItem } from '../content/siteContent'
 import { getProperties } from '../content/propertiesData'
 import { PropertyCard } from './PropertyCard'
 
@@ -9,7 +9,8 @@ const MAX_HOME_PROPERTIES = 6
 
 export function PropertyDiscovery() {
   const [active, setActive] = useState<Filter>('Todos')
-  const [properties, setProperties] = useState<PropertyItem[]>(propertyConcepts)
+  const [properties, setProperties] = useState<PropertyItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [current, setCurrent] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
   const visible = useMemo(() => (active === 'Todos' ? properties : properties.filter((item) => item.category === active)).slice(0, MAX_HOME_PROPERTIES), [active, properties])
@@ -17,7 +18,9 @@ export function PropertyDiscovery() {
   useEffect(() => {
     let mounted = true
     getProperties().then((items) => {
-      if (mounted) setProperties(items)
+      if (!mounted) return
+      setProperties(items)
+      setLoading(false)
     })
     return () => { mounted = false }
   }, [])
@@ -51,7 +54,7 @@ export function PropertyDiscovery() {
       <div className="filterbar" aria-label="Filtrar conceitos de imóveis" data-reveal="line">
         <span>Explore por perfil</span>
         <div>{filters.map((filter) => <button type="button" className={filter === active ? 'is-active' : ''} aria-pressed={filter === active} onClick={() => setActive(filter)} key={filter}>{filter}</button>)}</div>
-        <output>{String(visible.length).padStart(2, '0')} imóveis</output>
+        <output>{loading ? '—' : `${String(visible.length).padStart(2, '0')} imóveis`}</output>
       </div>
 
       <div className="property-carousel" data-reveal="rise">
@@ -64,7 +67,13 @@ export function PropertyDiscovery() {
           </div>
         </div>
         <div className="property-carousel__track" ref={trackRef}>
-          {visible.map((property, index) => <div className="property-carousel__slide" key={property.id}><PropertyCard property={property} index={index} /></div>)}
+          {loading ? (
+            <div className="property-carousel__loading" role="status">Carregando imóveis disponíveis…</div>
+          ) : visible.length ? (
+            visible.map((property, index) => <div className="property-carousel__slide" key={property.id}><PropertyCard property={property} index={index} /></div>)
+          ) : (
+            <div className="property-carousel__loading" role="status">Nenhum imóvel disponível neste perfil no momento.</div>
+          )}
         </div>
         <div className="property-carousel__footer">
           <div className="property-carousel__dots" aria-label="Selecionar imóvel">

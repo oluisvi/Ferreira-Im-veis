@@ -30,6 +30,7 @@
 .property-carousel__controls span { min-width:4rem; text-align:center; font-size:.62rem; letter-spacing:.12em; color:var(--muted); }
 .property-carousel__track { display:flex; gap:1.25rem; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior-inline:contain; padding:.5rem 0 1rem; }
 .property-carousel__track::-webkit-scrollbar { display:none; }
+.property-carousel__loading { flex:0 0 100%; min-height:18rem; display:grid; place-items:center; border:1px solid var(--line); border-radius:var(--radius-sm); color:var(--muted); font-size:.7rem; text-transform:uppercase; letter-spacing:.12em; background:var(--surface); }
 .property-carousel__slide { flex:0 0 min(84vw, 25rem); scroll-snap-align:start; }
 .property-carousel .property { grid-column:auto; margin:0; height:100%; display:flex; flex-direction:column; }
 .property-carousel .property__image,.property-carousel .property--2 .property__image,.property-carousel .property--3 .property__image { aspect-ratio:4/3; clip-path:none; border-radius:var(--radius-sm); }

@@ -263,3 +263,23 @@ body.intro-active .back-to-top { opacity:0!important; visibility:hidden!importan
   .catalog-card:hover { box-shadow:0 1.1rem 3rem rgba(20,19,16,.08); }
   a,button { transition-timing-function:cubic-bezier(.16,1,.3,1); }
 }
+
+/* Returning visitors and internal page loads keep the branded intro, but run it much faster. */
+.intro-portal--fast::before { animation-duration: .24s; }
+.intro-portal--fast::after { animation: introGlow .42s .28s ease both; }
+.intro-portal--fast .intro-logo-part--foundation { animation-duration: .20s; }
+.intro-portal--fast .intro-logo-part--facade { animation-duration: .22s; }
+.intro-portal--fast .intro-logo-part--rail { animation-duration: .12s; }
+.intro-portal--fast .intro-logo-part--door { animation-duration: .13s; }
+.intro-portal--fast .intro-logo-part--roof-left,
+.intro-portal--fast .intro-logo-part--roof-right { animation-duration: .20s; }
+.intro-portal--fast .intro-logo-part--roof-center { animation-duration: .23s; }
+.intro-portal--fast .intro-logo-shimmer { animation: logoShimmer .28s .64s cubic-bezier(.16,1,.3,1) both; }
+.intro-portal--fast .intro-build__sweep { animation: logoSweep .22s .58s cubic-bezier(.16,1,.3,1) both; }
+.intro-portal--fast .intro-build__wordmark { animation: wordmarkIn .22s .60s cubic-bezier(.16,1,.3,1) both; }
+.intro-portal--fast .intro-build__signature { animation: signatureIn .15s .72s ease-out both; }
+.intro-portal--fast .intro-build__draft { animation: draftIn .18s .02s ease both, draftOut .18s .48s ease both; }
+.intro-portal--fast .intro-build__draft-line--base { animation: draftLine .22s .06s cubic-bezier(.16,1,.3,1) both; }
+.intro-portal--fast .intro-build__draft-line--roof { animation: draftRoof .24s .09s cubic-bezier(.16,1,.3,1) both; }
+.intro-portal--fast.intro-portal--revealing { animation-duration: .36s; }
+.intro-portal--fast.intro-portal--revealing .intro-build { animation-duration: .28s; }

@@ -30,7 +30,7 @@ export function PropertiesPage() {
         <section className="catalog-hero">
           <div><span className="section-kicker">Catálogo Ferreira</span><h1>Encontre um imóvel que faça <em>sentido para você.</em></h1></div>
           <div className="catalog-hero__meta"><p>Use os filtros para reduzir a busca e abra cada ficha para ver detalhes e falar diretamente pelo WhatsApp.</p><div><strong>{String(filtered.length).padStart(2, '0')}</strong><span>{filtered.length === 1 ? 'imóvel encontrado' : 'imóveis encontrados'}</span></div></div>
-          {source === 'fallback' && !loading && <p className="catalog-source-note">Prévia demonstrativa: conecte o Google Sheets para carregar o catálogo oficial.</p>}
+          {source === 'fallback' && !loading && <p className="catalog-source-note">Não foi possível carregar os imóveis do catálogo agora. Tente novamente em alguns instantes.</p>}
         </section>
         <div className="catalog-layout">
           <CatalogFilters properties={properties} filters={filters} onChange={setFilters} />

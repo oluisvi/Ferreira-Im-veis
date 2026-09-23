@@ -21,7 +21,7 @@ export function PropertyDetailPage({ code }: { code: string }) {
   }, [property])
 
   if (!property && loading) return <><Header variant="solid" /><main id="conteudo" className="property-loading"><span>Carregando imóvel…</span></main></>
-  if (!property) return <><Header variant="solid" /><main id="conteudo" className="property-not-found"><span>{source === 'fallback' ? 'Catálogo demonstrativo' : 'Catálogo Ferreira'}</span><h1>Imóvel não encontrado.</h1><p>Ele pode ter sido vendido, removido da planilha ou estar temporariamente indisponível.</p><a className="button button--dark" href="/imoveis">Voltar aos imóveis</a></main><Footer /></>
+  if (!property) return <><Header variant="solid" /><main id="conteudo" className="property-not-found"><span>{source === 'fallback' ? 'Catálogo indisponível' : 'Catálogo Ferreira'}</span><h1>Imóvel não encontrado.</h1><p>Ele pode ter sido vendido, removido da planilha ou estar temporariamente indisponível.</p><a className="button button--dark" href="/imoveis">Voltar aos imóveis</a></main><Footer /></>
 
   const mapUrl = getMapUrl(property)
   const photos = property.photos.length ? property.photos : [property.mainImage]

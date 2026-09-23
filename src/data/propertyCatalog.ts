@@ -161,6 +161,6 @@ export async function loadProperties(): Promise<CatalogResponse> {
     if (!isCatalogResponse(data)) throw new Error('Resposta do catálogo inválida')
     return { ...data, source: 'google-sheets' }
   } catch {
-    return { source: 'fallback', properties: fallbackProperties }
+    return { source: 'fallback', properties: [] }
   }
 }
