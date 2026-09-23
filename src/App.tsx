@@ -29,9 +29,8 @@ export default function App() {
   if (path === '/admin') return <Admin />
   if (path === '/') return <PublicShell><HomePage /></PublicShell>
   if (path === '/imoveis') return <PublicShell><PropertiesPage /></PublicShell>
-  if (path.startsWith('/imoveis/') || path.startsWith('/imovel/')) {
-    const prefix = path.startsWith('/imoveis/') ? '/imoveis/' : '/imovel/'
-    const code = decodeURIComponent(path.slice(prefix.length))
+  if (path.startsWith('/imoveis/')) {
+    const code = decodeURIComponent(path.slice('/imoveis/'.length))
     return <PublicShell><PropertyDetailPage code={code} /></PublicShell>
   }
   return <PublicShell><NotFoundPage /></PublicShell>

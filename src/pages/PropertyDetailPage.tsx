@@ -33,7 +33,7 @@ export function PropertyDetailPage({ code }: { code: string }) {
         <div className="property-detail__topbar"><a href="/imoveis">← Voltar aos imóveis</a><span>{property.code}</span></div>
         <section className="property-detail__gallery" aria-label="Galeria do imóvel">
           <div className="property-detail__main-image"><img src={selectedImage || property.mainImage} alt={property.title} /></div>
-          {photos.length > 1 && <div className="property-detail__thumbs">{photos.map((photo, index) => <button type="button" className={photo === selectedImage ? 'is-active' : ''} onClick={() => setSelectedImage(photo)} key={`${photo}-${index}`} aria-label={`Ver foto ${index + 1}`}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
+          {photos.length > 1 && <div className="property-detail__thumbs">{photos.slice(0, 6).map((photo, index) => <button type="button" className={photo === selectedImage ? 'is-active' : ''} onClick={() => setSelectedImage(photo)} key={`${photo}-${index}`} aria-label={`Ver foto ${index + 1}`}><img src={photo} alt="" /></button>)}</div>}
         </section>
         <section className="property-detail__intro">
           <div><span className="section-kicker">{property.type} · {property.purpose}</span><h1>{property.title}</h1><p>⌖ {getPropertyLocation(property)}</p></div>

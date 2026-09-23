@@ -1,38 +1,218 @@
 html { scrollbar-gutter: stable; }
 body.intro-active { overflow: hidden; }
-.intro-portal { position: fixed; inset: 0; z-index: 120; color: var(--paper); overflow: hidden; pointer-events: all; isolation: isolate; }
-.intro-portal__panel { position: absolute; inset-block: 0; width: calc(50% + 1px); background: #141310; overflow: hidden; will-change: transform; }
-.intro-portal__panel::after { content: ''; position: absolute; inset-block: 0; width: 1px; background: rgba(255,255,255,.12); }
-.intro-portal__panel--left { left: 0; } .intro-portal__panel--left::after { right: 0; }
-.intro-portal__panel--right { right: 0; } .intro-portal__panel--right::after { left: 0; }
-.intro-portal__panel span { position: absolute; top: 11%; bottom: 11%; width: 1px; background: rgba(255,255,255,.07); }
-.intro-portal__panel--left span { right: 18%; } .intro-portal__panel--right span { left: 18%; }
-.intro-portal__threshold { position: absolute; z-index: 3; left: 50%; top: 56%; display: grid; justify-items: center; gap: 1rem; transform: translate(-50%,-50%); white-space: nowrap; opacity: 0; animation: thresholdIn .48s .18s cubic-bezier(.2,.8,.2,1) both; }
-.intro-portal__threshold .brand { transform: scale(1.05); }
-.intro-portal__threshold .brand__type small { color: rgba(255,255,255,.52); }
-.intro-portal__creci { font-size: .52rem; letter-spacing: .22em; text-transform: uppercase; color: #c5a465; }
-.intro-portal__roof { position: absolute; z-index: 4; left: 50%; top: 22%; width: min(24rem, 68vw); height: 12rem; transform: translateX(-50%); transform-origin: 50% 60%; will-change: transform,opacity; }
-.intro-portal__roof i { position: absolute; top: 50%; width: 55%; height: 2px; background: var(--paper); transform: scaleX(0); }
-.intro-portal__roof i:first-child { right: 50%; transform-origin: right; animation: drawRoofLeft .48s .08s ease-out both; }
-.intro-portal__roof i:nth-child(2) { left: 50%; transform-origin: left; animation: drawRoofRight .48s .08s ease-out both; }
-.intro-portal__roof span { position: absolute; left: 18%; right: 18%; bottom: 8%; height: 1px; background: #c5a465; transform: scaleX(0); animation: drawBase .32s .38s ease-out both; }
-.intro-portal__light { position: absolute; z-index: 2; inset: 0; background: radial-gradient(circle at 50% 55%, rgba(196,161,95,.22), transparent 26%); opacity: 0; animation: lightSettle .72s .28s ease both, lightBreathe 1.9s 1s ease-in-out infinite; }
-.intro-portal--revealing .intro-portal__threshold { animation: thresholdOut .28s ease both; }
-.intro-portal--revealing .intro-portal__roof { animation: roofRelease .42s cubic-bezier(.4,0,.2,1) both; }
-.intro-portal--revealing .intro-portal__light { animation: lightOut .4s ease both; }
-.intro-portal--revealing .intro-portal__panel--left { animation: doorLeft .72s .04s cubic-bezier(.76,0,.24,1) both; }
-.intro-portal--revealing .intro-portal__panel--right { animation: doorRight .72s .04s cubic-bezier(.76,0,.24,1) both; }
-@keyframes drawRoofLeft { from { transform: rotate(-34deg) scaleX(0); } to { transform: rotate(-34deg) scaleX(1); } }
-@keyframes drawRoofRight { from { transform: rotate(34deg) scaleX(0); } to { transform: rotate(34deg) scaleX(1); } }
-@keyframes drawBase { to { transform: scaleX(1); } }
-@keyframes thresholdIn { from { opacity:0; transform:translate(-50%,-43%); } to { opacity:1; transform:translate(-50%,-50%); } }
-@keyframes thresholdOut { to { opacity:0; transform:translate(-50%,-57%); } }
-@keyframes lightSettle { 55% { opacity:1; } to { opacity:.4; } }
-@keyframes lightBreathe { 0%,100% { opacity:.25; } 50% { opacity:.48; } }
-@keyframes lightOut { to { opacity:0; } }
-@keyframes roofRelease { to { opacity:0; transform:translateX(-50%) translateY(-7vh) scale(.94); } }
-@keyframes doorLeft { to { transform:translateX(-100%); } }
-@keyframes doorRight { to { transform:translateX(100%); } }
+
+/* Intro: the original Ferreira SVG assembles once, piece by piece, on a black stage. */
+.intro-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  overflow: hidden;
+  pointer-events: all;
+  isolation: isolate;
+  color: #d7ad61;
+  background:
+    radial-gradient(circle at 50% 43%, rgba(196,147,68,.105), transparent 31%),
+    #050505;
+  transform-origin: 50% 0;
+}
+.intro-portal::before {
+  content: '';
+  position: absolute;
+  inset: -4rem;
+  opacity: .34;
+  background-image:
+    linear-gradient(rgba(213,172,96,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(213,172,96,.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at 50% 45%, #000 0 38%, transparent 72%);
+  animation: introGridIn .9s ease both;
+}
+.intro-portal::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(34rem, 92vw);
+  height: min(22rem, 58vw);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(210,164,82,.12), transparent 68%);
+  filter: blur(18px);
+  transform: translate(-50%,-50%) scale(.8);
+  opacity: 0;
+  animation: introGlow 1.6s 1.45s ease both;
+}
+.intro-build {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: min(33rem, 90vw);
+  display: grid;
+  justify-items: center;
+  transform: translate(-50%, -52%);
+}
+.intro-build__logo {
+  position: relative;
+  width: min(26rem, 78vw);
+  aspect-ratio: 550 / 380;
+  display: grid;
+  place-items: center;
+}
+.intro-logo-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+.intro-logo-part {
+  --piece-delay: 0ms;
+  fill: url(#introGold);
+  opacity: 0;
+  transform-box: fill-box;
+  will-change: transform, opacity;
+}
+.intro-logo-part--foundation {
+  transform-origin: 50% 100%;
+  animation: buildFoundation .52s var(--piece-delay) cubic-bezier(.16,1,.3,1) both;
+}
+.intro-logo-part--facade {
+  transform-origin: 50% 100%;
+  animation: buildFacade .62s var(--piece-delay) cubic-bezier(.16,1,.3,1) both;
+}
+.intro-logo-part--rail {
+  transform-origin: 50% 100%;
+  animation: buildRail .32s var(--piece-delay) cubic-bezier(.2,.9,.2,1.2) both;
+}
+.intro-logo-part--door {
+  transform-origin: 50% 50%;
+  animation: buildDoor .34s var(--piece-delay) cubic-bezier(.34,1.56,.64,1) both;
+}
+.intro-logo-part--roof-left {
+  transform-origin: 100% 55%;
+  animation: buildRoofLeft .58s var(--piece-delay) cubic-bezier(.16,1,.3,1) both;
+}
+.intro-logo-part--roof-right {
+  transform-origin: 0 55%;
+  animation: buildRoofRight .58s var(--piece-delay) cubic-bezier(.16,1,.3,1) both;
+}
+.intro-logo-part--roof-center {
+  transform-origin: 50% 70%;
+  animation: buildRoofCenter .65s var(--piece-delay) cubic-bezier(.16,1,.3,1) both;
+}
+.intro-logo-shimmer {
+  opacity: 0;
+  transform: translateX(-180px) skewX(-12deg);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: logoShimmer .72s 2.42s cubic-bezier(.16,1,.3,1) both;
+}
+.intro-build__sweep {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  bottom: -3%;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(218,176,96,.9) 22%, rgba(255,226,157,.95) 50%, rgba(218,176,96,.9) 78%, transparent);
+  transform: scaleX(.08);
+  animation: logoSweep .58s 2.28s cubic-bezier(.16,1,.3,1) both;
+}
+.intro-build__wordmark {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: .55rem;
+  margin-top: 1.15rem;
+  opacity: 0;
+  transform: translateY(.75rem);
+  animation: wordmarkIn .58s 2.34s cubic-bezier(.16,1,.3,1) both;
+}
+.intro-build__wordmark strong {
+  font-family: var(--sans);
+  color: #d5aa5d;
+  font-size: clamp(1.7rem, 6vw, 2.7rem);
+  font-weight: 720;
+  line-height: 1;
+  letter-spacing: .23em;
+  text-transform: uppercase;
+  padding-left: .23em;
+  text-shadow: 0 0 26px rgba(199,153,72,.12);
+}
+.intro-build__wordmark span {
+  color: rgba(245,236,217,.6);
+  font-size: clamp(.5rem, 1.8vw, .66rem);
+  font-weight: 620;
+  letter-spacing: .19em;
+  text-transform: uppercase;
+}
+.intro-build__signature {
+  width: 2.7rem;
+  height: 1px;
+  margin-top: 1.05rem;
+  background: linear-gradient(90deg, transparent, #d5aa5d, transparent);
+  transform: scaleX(0);
+  animation: signatureIn .38s 2.64s ease-out both;
+}
+.intro-build__draft {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: -8%;
+  height: 71%;
+  opacity: 0;
+  pointer-events: none;
+  animation: draftIn .48s .06s ease both, draftOut .5s 1.82s ease both;
+}
+.intro-build__draft i,
+.intro-build__draft-line {
+  position: absolute;
+  display: block;
+  background: rgba(213,172,96,.2);
+}
+.intro-build__draft i:nth-child(1),
+.intro-build__draft i:nth-child(2) { top: 8%; bottom: 4%; width: 1px; }
+.intro-build__draft i:nth-child(1) { left: 7%; }
+.intro-build__draft i:nth-child(2) { right: 7%; }
+.intro-build__draft i:nth-child(3),
+.intro-build__draft i:nth-child(4) { left: 7%; right: 7%; height: 1px; }
+.intro-build__draft i:nth-child(3) { top: 34%; }
+.intro-build__draft i:nth-child(4) { bottom: 4%; }
+.intro-build__draft-line--base {
+  left: 18%; right: 18%; bottom: 22%; height: 1px;
+  transform: scaleX(0);
+  animation: draftLine .7s .18s cubic-bezier(.16,1,.3,1) both;
+}
+.intro-build__draft-line--roof {
+  left: 50%; top: 6%; width: 37%; height: 1px;
+  transform-origin: 0 50%;
+  transform: rotate(43deg) scaleX(0);
+  animation: draftRoof .72s .28s cubic-bezier(.16,1,.3,1) both;
+}
+
+.intro-portal--revealing { animation: introCurtainUp .76s cubic-bezier(.76,0,.24,1) both; }
+.intro-portal--revealing .intro-build { animation: assembledExit .55s cubic-bezier(.4,0,.2,1) both; }
+
+@keyframes introGridIn { from { opacity:0; transform:scale(1.04); } to { opacity:.34; transform:none; } }
+@keyframes introGlow { 0% { opacity:0; transform:translate(-50%,-50%) scale(.78); } 55% { opacity:1; } 100% { opacity:.72; transform:translate(-50%,-50%) scale(1); } }
+@keyframes buildFoundation { from { opacity:0; transform:translateY(28px) scaleX(.38); } to { opacity:1; transform:none; } }
+@keyframes buildFacade { 0% { opacity:0; transform:translateY(18px) scaleY(.12) scaleX(.94); } 35% { opacity:1; } 100% { opacity:1; transform:none; } }
+@keyframes buildRail { from { opacity:0; transform:translateY(18px) scaleY(.18); } to { opacity:1; transform:none; } }
+@keyframes buildDoor { from { opacity:0; transform:scale(.45) translateY(6px); } to { opacity:1; transform:none; } }
+@keyframes buildRoofLeft { from { opacity:0; transform:translate(-42px,-18px) rotate(-5deg) scale(.88); } to { opacity:1; transform:none; } }
+@keyframes buildRoofRight { from { opacity:0; transform:translate(42px,-18px) rotate(5deg) scale(.88); } to { opacity:1; transform:none; } }
+@keyframes buildRoofCenter { 0% { opacity:0; transform:translateY(-42px) scale(.8); } 72% { opacity:1; transform:translateY(2px) scale(1.01); } 100% { opacity:1; transform:none; } }
+@keyframes logoShimmer { 0% { opacity:0; transform:translateX(-190px) skewX(-12deg); } 20% { opacity:.9; } 100% { opacity:0; transform:translateX(500px) skewX(-12deg); } }
+@keyframes logoSweep { 0% { opacity:0; transform:scaleX(.08); } 45% { opacity:1; } 100% { opacity:.72; transform:scaleX(1); } }
+@keyframes wordmarkIn { to { opacity:1; transform:none; } }
+@keyframes signatureIn { to { transform:scaleX(1); } }
+@keyframes draftIn { to { opacity:1; } }
+@keyframes draftOut { to { opacity:0; } }
+@keyframes draftLine { to { transform:scaleX(1); } }
+@keyframes draftRoof { to { transform:rotate(43deg) scaleX(1); } }
+@keyframes assembledExit { to { opacity:0; transform:translate(-50%,-56%) scale(.975); filter:blur(2px); } }
+@keyframes introCurtainUp { 0% { clip-path:inset(0 0 0 0); } 100% { clip-path:inset(0 0 100% 0); } }
 
 @media (prefers-reduced-motion: no-preference) {
   .hero__visual img { animation: heroReveal 1.2s cubic-bezier(.16,1,.3,1) both; }
