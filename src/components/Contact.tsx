@@ -1,15 +1,17 @@
 import type { CSSProperties } from 'react'
-import { buildWhatsAppUrl, WHATSAPP_NUMBER_DISPLAY } from '../content/siteContent'
+import { buildWhatsAppUrl } from '../content/siteContent'
 
 export function Contact() {
   return (
     <section className="contact" id="contato">
-      <div className="contact__roof" aria-hidden="true" data-reveal="scale"><i /><i /></div>
-      <span className="section-kicker" data-reveal="rise">05 · Vamos conversar</span>
-      <h2 data-reveal="rise" style={{ '--reveal-delay': '70ms' } as CSSProperties}>Qual é o lugar que<br />você quer <em>chamar de seu?</em></h2>
-      <p data-reveal="rise" style={{ '--reveal-delay': '140ms' } as CSSProperties}>Conte o que você está buscando. A conversa é direta, pessoal e começa sem compromisso.</p>
-      <a className="button button--light contact__cta" data-reveal="rise" style={{ '--reveal-delay': '210ms' } as CSSProperties} href={buildWhatsAppUrl('Olá, Ferreira! Quero começar uma busca por imóvel.')} target="_blank" rel="noreferrer">Chamar no WhatsApp <span>↗</span></a>
-      <a className="contact__phone" data-reveal="rise" style={{ '--reveal-delay': '270ms' } as CSSProperties} href={buildWhatsAppUrl('Olá, Ferreira! Quero começar uma busca por imóvel.')} target="_blank" rel="noreferrer">{WHATSAPP_NUMBER_DISPLAY}</a>
+      <div className="contact__roof" aria-hidden="true" data-reveal="scale"><i /><i /><span /></div>
+      <div className="contact__copy">
+        <span className="section-kicker" data-reveal="rise">Atendimento personalizado</span>
+        <h2 data-reveal="rise" style={{ '--reveal-delay': '60ms' } as CSSProperties}>Quer ajuda para encontrar o <em>imóvel certo?</em></h2>
+        <p data-reveal="rise" style={{ '--reveal-delay': '120ms' } as CSSProperties}>Conte o que você procura e continue a conversa diretamente pelo WhatsApp.</p>
+        <div className="contact__proofs" data-reveal="line" style={{ '--reveal-delay': '170ms' } as CSSProperties}><span>✓ Atendimento direto</span><span>✓ Conversa sem compromisso</span><span>✓ Busca personalizada</span></div>
+      </div>
+      <a className="button button--accent contact__cta" data-reveal="rise" style={{ '--reveal-delay': '210ms' } as CSSProperties} href={buildWhatsAppUrl('Olá, Ferreira! Quero ajuda para encontrar o imóvel certo.')} target="_blank" rel="noreferrer">Falar no WhatsApp <span>↗</span></a>
     </section>
   )
 }

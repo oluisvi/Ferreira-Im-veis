@@ -1,14 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
 
 :root {
-  --ink: #171614;
-  --paper: #f1efe9;
-  --paper-deep: #e5e0d7;
-  --red: #d72d34;
-  --muted: #76716a;
-  --line: rgba(23, 22, 20, .18);
+  --ink: #141310;
+  --paper: #f6f3ec;
+  --paper-deep: #ece6da;
+  --surface: #fffdf9;
+  --accent: #aa884c;
+  --accent-strong: #8f6e36;
+  --red: var(--accent);
+  --muted: #746e64;
+  --line: rgba(20, 19, 16, .12);
+  --inverse-line: rgba(255, 255, 255, .16);
   --serif: 'Instrument Serif', Georgia, serif;
   --sans: 'DM Sans', Arial, sans-serif;
-  --pad: clamp(1.25rem, 4vw, 4.5rem);
-  --section: clamp(6rem, 12vw, 11rem);
+  --pad: clamp(1rem, 4vw, 4.5rem);
+  --section: clamp(5rem, 10vw, 9rem);
+  --radius-sm: .55rem;
+  --radius-md: .9rem;
+  --shadow-soft: 0 1.2rem 4rem rgba(42, 34, 22, .10);
+  --shadow-card: 0 .75rem 2.25rem rgba(42, 34, 22, .08);
 }

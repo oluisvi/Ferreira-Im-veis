@@ -1,31 +1,32 @@
 import { buildWhatsAppUrl, CRECI } from '../content/siteContent'
 import { ArchitecturalFrame } from './ArchitecturalFrame'
+import { QuickPropertySearch } from './QuickPropertySearch'
 
 export function Hero() {
   return (
     <section className="hero" id="inicio">
-      <div className="hero__eyebrow"><span>Curadoria imobiliária pessoal</span><span>CRECI {CRECI}</span></div>
-      <div className="hero__title"><h1>Espaços para a próxima parte da <em>sua história.</em></h1></div>
       <div className="hero__visual">
-        <ArchitecturalFrame />
         <img
           data-hero-image="critical"
           src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=2000&q=88"
-          alt="Arquitetura residencial contemporânea, imagem ilustrativa"
+          alt="Arquitetura residencial contemporânea"
           loading="eager"
           decoding="async"
           fetchPriority="high"
         />
-        <span className="hero__image-note">Imagem de ambientação</span>
+        <ArchitecturalFrame />
       </div>
-      <div className="hero__aside">
-        <p>Encontrar um imóvel é reconhecer o lugar onde a vida pode acontecer. A busca começa pela sua história.</p>
+      <div className="hero__content">
+        <span className="hero__kicker">Seu próximo endereço começa aqui · CRECI {CRECI}</span>
+        <h1>Encontre o <em>imóvel ideal</em> para a sua próxima fase.</h1>
+        <p>Explore oportunidades selecionadas e conte com atendimento direto para encontrar o que realmente combina com você.</p>
         <div className="hero__actions">
-          <a className="button button--dark" href="/imoveis">Ver imóveis disponíveis <span>→</span></a>
-          <a className="text-link" href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">Falar no WhatsApp ↗</a>
+          <a className="button button--accent" href="/imoveis">Ver imóveis <span>→</span></a>
+          <a className="text-link text-link--light" href={buildWhatsAppUrl('Olá, Ferreira! Quero ajuda para encontrar um imóvel.')} target="_blank" rel="noreferrer">Falar com o corretor ↗</a>
         </div>
       </div>
-      <div className="hero__index" aria-hidden="true">01 <span /> 05</div>
+      <div className="hero__message" data-reveal="rise"><span>Mais que anúncios.</span><strong>Decisões acompanhadas de perto.</strong></div>
+      <div className="hero__search"><QuickPropertySearch /></div>
     </section>
   )
 }
