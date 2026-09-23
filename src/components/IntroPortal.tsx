@@ -22,7 +22,9 @@ type TimedPathProps = {
 function hasReducedMotion() { return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) }
 function shouldPlayIntro() {
   if (typeof window === 'undefined') return false
-  return !hasReducedMotion()
+  // A abertura de marca pertence à home. Páginas internas devem abrir direto
+  // para o conteúdo, sem bloquear catálogo, fichas ou o painel administrativo.
+  return window.location.pathname === '/' && !hasReducedMotion()
 }
 function getIntroPace(): IntroPace {
   if (typeof window === 'undefined') return 'normal'
