@@ -1,3 +1,4 @@
+import fallbackCatalogCsv from '../../docs/google-sheets/ferreira-imoveis-template.csv?raw'
 import { CRECI, WHATSAPP_NUMBER } from '../content/siteContent'
 
 export type Property = {
@@ -47,40 +48,166 @@ export const emptyFilters: PropertyFilters = {
   search: '', city: '', neighborhood: '', type: '', purpose: '', minPrice: '', maxPrice: '',
 }
 
-const demoImages = {
-  casa: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-  apartamento: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85',
-  refugio: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1600&q=85',
-  interior: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=85',
-  cozinha: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1600&q=85',
+const ACTIVE_STATUS = new Set(['ativo', 'active'])
+
+type CsvRecord = Record<string, string>
+
+function normalizeKey(value = '') {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
 }
 
-export const fallbackProperties: Property[] = [
-  {
-    code: 'FI-001', title: 'Casa contemporânea em condomínio', type: 'Casa', purpose: 'Venda', city: 'Jacareí', neighborhood: 'Condomínio fechado', address: '',
-    price: 850000, bedrooms: 3, bathrooms: 2, parkingSpaces: 2, area: 180, builtArea: 180, lotArea: 300,
-    description: 'Casa moderna com ambientes integrados, iluminação natural e área externa pensada para receber.',
-    mainImage: demoImages.casa, photos: [demoImages.casa, demoImages.interior, demoImages.cozinha], broker: 'Ferreira', creci: CRECI, whatsapp: WHATSAPP_NUMBER,
-    status: 'Ativo', featured: true, features: ['Condomínio fechado', 'Área gourmet', 'Ambientes integrados'], palette: ['#D7C7B0', '#8A6A4A', '#2D2B27'],
-    condominiumFee: 650, propertyTax: 1800, latitude: null, longitude: null,
-  },
-  {
-    code: 'FI-002', title: 'Apartamento com horizonte aberto', type: 'Apartamento', purpose: 'Venda', city: 'São José dos Campos', neighborhood: 'Urbanova', address: '',
-    price: 640000, bedrooms: 3, bathrooms: 2, parkingSpaces: 2, area: 118, builtArea: 118, lotArea: null,
-    description: 'Apartamento claro, bem distribuído e conectado à rotina urbana, com vista ampla e espaços sociais generosos.',
-    mainImage: demoImages.apartamento, photos: [demoImages.apartamento, demoImages.interior], broker: 'Ferreira', creci: CRECI, whatsapp: WHATSAPP_NUMBER,
-    status: 'Ativo', featured: true, features: ['Varanda', '2 vagas', 'Vista aberta'], palette: ['#E6DED3', '#A88E74', '#393734'],
-    condominiumFee: 780, propertyTax: 1250, latitude: null, longitude: null,
-  },
-  {
-    code: 'FI-003', title: 'Refúgio cercado por natureza', type: 'Refúgio', purpose: 'Venda', city: 'Jacareí', neighborhood: 'Zona rural', address: '',
-    price: 1250000, bedrooms: 4, bathrooms: 3, parkingSpaces: 4, area: 260, builtArea: 260, lotArea: 2400,
-    description: 'Uma propriedade para desacelerar, com muito verde, privacidade e espaços amplos para viver e receber.',
-    mainImage: demoImages.refugio, photos: [demoImages.refugio, demoImages.casa], broker: 'Ferreira', creci: CRECI, whatsapp: WHATSAPP_NUMBER,
-    status: 'Ativo', featured: false, features: ['Área verde', 'Privacidade', 'Terreno amplo'], palette: ['#62705A', '#B69B72', '#E6E1D8'],
-    condominiumFee: null, propertyTax: 2200, latitude: null, longitude: null,
-  },
-]
+function parseCsv(text: string) {
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let quoted = false
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]
+    const next = text[index + 1]
+
+    if (char === '"') {
+      if (quoted && next === '"') {
+        field += '"'
+        index += 1
+      } else {
+        quoted = !quoted
+      }
+      continue
+    }
+
+    if (char === ',' && !quoted) {
+      row.push(field)
+      field = ''
+      continue
+    }
+
+    if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && next === '\n') index += 1
+      row.push(field)
+      field = ''
+      if (row.some((cell) => cell.trim() !== '')) rows.push(row)
+      row = []
+      continue
+    }
+
+    field += char
+  }
+
+  row.push(field)
+  if (row.some((cell) => cell.trim() !== '')) rows.push(row)
+  return rows
+}
+
+function parseLocaleNumber(value: string) {
+  if (!value) return null
+  const raw = value.trim().replace(/[^0-9,.-]/g, '')
+  if (!raw) return null
+
+  let normalized = raw
+  if (raw.includes(',')) normalized = raw.replace(/\./g, '').replace(',', '.')
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(raw)) normalized = raw.replace(/\./g, '')
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseInteger(value: string) {
+  const parsed = parseLocaleNumber(value)
+  return parsed === null ? null : Math.round(parsed)
+}
+
+function parseBoolean(value: string) {
+  return new Set(['sim', 's', 'yes', 'true', '1', 'destaque']).has(normalizeKey(value))
+}
+
+function splitList(value: string) {
+  if (!value) return []
+  return value.split(/\s*\|\s*|\r?\n/).map((item) => item.trim()).filter(Boolean)
+}
+
+function normalizeImageUrl(value: string) {
+  if (!value) return ''
+  const url = value.trim()
+  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
+  const idMatch = url.match(/[?&]id=([^&]+)/)
+  const driveId = fileMatch?.[1] || idMatch?.[1]
+  return driveId ? `https://drive.google.com/uc?export=view&id=${driveId}` : url
+}
+
+function createRecord(headers: string[], row: string[]) {
+  return headers.reduce<CsvRecord>((record, header, index) => {
+    record[normalizeKey(header)] = String(row[index] ?? '').trim()
+    return record
+  }, {})
+}
+
+function pick(record: CsvRecord, ...keys: string[]) {
+  for (const key of keys) {
+    const value = record[normalizeKey(key)]
+    if (value !== undefined && value !== '') return value
+  }
+  return ''
+}
+
+function normalizeFallbackProperty(record: CsvRecord): Property | null {
+  const code = pick(record, 'Código', 'Codigo', 'Code', 'ID', 'Referência', 'Referencia')
+  const title = pick(record, 'Título', 'Titulo', 'Nome')
+  const status = pick(record, 'Status')
+
+  // O CSV de docs/google-sheets é a única fonte dos imóveis demonstrativos.
+  // Linhas inativas continuam no exemplo da planilha, mas não aparecem no site.
+  if (!code || !title || !ACTIVE_STATUS.has(normalizeKey(status))) return null
+
+  const photos = splitList(pick(record, 'Fotos', 'Galeria')).map(normalizeImageUrl)
+  const mainImage = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa')) || photos[0] || ''
+  const uniquePhotos = [...new Set([mainImage, ...photos].filter(Boolean))]
+
+  return {
+    code,
+    title,
+    type: pick(record, 'Tipo'),
+    purpose: pick(record, 'Finalidade'),
+    city: pick(record, 'Cidade'),
+    neighborhood: pick(record, 'Bairro'),
+    address: pick(record, 'Endereço', 'Endereco'),
+    price: parseLocaleNumber(pick(record, 'Preço', 'Preco', 'Valor')),
+    bedrooms: parseInteger(pick(record, 'Quartos', 'Dormitórios', 'Dormitorios')),
+    bathrooms: parseInteger(pick(record, 'Banheiros')),
+    parkingSpaces: parseInteger(pick(record, 'Vagas', 'Garagens')),
+    area: parseLocaleNumber(pick(record, 'Área', 'Area', 'Metragem')),
+    builtArea: parseLocaleNumber(pick(record, 'Área construída', 'AreaConstruida')),
+    lotArea: parseLocaleNumber(pick(record, 'Área terreno', 'AreaTerreno')),
+    description: pick(record, 'Descrição', 'Descricao'),
+    mainImage,
+    photos: uniquePhotos,
+    broker: pick(record, 'Corretor') || 'Ferreira',
+    creci: pick(record, 'CRECI') || CRECI,
+    whatsapp: pick(record, 'WhatsApp').replace(/\D/g, '') || WHATSAPP_NUMBER,
+    status,
+    featured: parseBoolean(pick(record, 'Destaque')),
+    features: splitList(pick(record, 'Diferenciais', 'Comodidades')),
+    palette: splitList(pick(record, 'Paleta')),
+    condominiumFee: parseLocaleNumber(pick(record, 'Condomínio', 'Condominio')),
+    propertyTax: parseLocaleNumber(pick(record, 'IPTU')),
+    latitude: parseLocaleNumber(pick(record, 'Latitude')),
+    longitude: parseLocaleNumber(pick(record, 'Longitude')),
+  }
+}
+
+export function parseFallbackProperties(csv: string): Property[] {
+  const rows = parseCsv(csv.replace(/^\uFEFF/, ''))
+  const [headers = [], ...dataRows] = rows
+  return dataRows
+    .map((row) => normalizeFallbackProperty(createRecord(headers, row)))
+    .filter((property): property is Property => property !== null)
+}
+
+export const fallbackProperties: Property[] = parseFallbackProperties(fallbackCatalogCsv)
 
 export function formatCurrency(value: number | null) {
   if (value === null) return 'Preço sob consulta'

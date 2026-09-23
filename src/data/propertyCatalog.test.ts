@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { emptyFilters, fallbackProperties, filterProperties, filtersFromSearchParams, formatCurrency, getPropertyRoute } from './propertyCatalog'
 
 describe('property catalog utilities', () => {
+
+  it('uses only active examples from docs/google-sheets as fallback', () => {
+    expect(fallbackProperties.map((property) => property.code)).toEqual(['FI-001', 'FI-002'])
+    expect(fallbackProperties.some((property) => property.code === 'FI-003')).toBe(false)
+  })
   it('filters by city, purpose and price', () => {
     const result = filterProperties(fallbackProperties, { ...emptyFilters, city: 'Jacareí', purpose: 'Venda', maxPrice: '900000' })
     expect(result.map((property) => property.code)).toEqual(['FI-001'])

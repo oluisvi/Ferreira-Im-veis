@@ -1,4 +1,5 @@
-import { propertyConcepts, type PropertyCategory, type PropertyListing } from './siteContent'
+import { fallbackProperties, type Property } from '../data/propertyCatalog'
+import { type PropertyCategory, type PropertyListing } from './siteContent'
 
 export const SHEET_CSV_URL = '/api/properties'
 
@@ -59,8 +60,34 @@ export function rowsToProperties(csv: string): PropertyListing[] {
     .filter((property) => property.title && property.image)
 }
 
+function catalogPropertyToListing(item: Property, index: number): PropertyListing {
+  return {
+    id: item.code || `property-${index}`,
+    category: normalizeCategory(item.type || 'Casa'),
+    eyebrow: [item.purpose, item.city].filter(Boolean).join(' · '),
+    title: item.title,
+    description: item.description,
+    image: item.mainImage,
+    imageAlt: `Imagem do imóvel ${item.title || index + 1}`,
+    price: item.price === null ? undefined : String(item.price),
+    location: [item.address, item.neighborhood, item.city].filter(Boolean).join(', '),
+    area: item.area === null ? undefined : String(item.area),
+    bedrooms: item.bedrooms === null ? undefined : String(item.bedrooms),
+    bathrooms: item.bathrooms === null ? undefined : String(item.bathrooms),
+    parking: item.parkingSpaces === null ? undefined : String(item.parkingSpaces),
+    sourceUrl: undefined,
+    isConcept: false,
+  }
+}
+
+function getFallbackListings() {
+  return fallbackProperties.map(catalogPropertyToListing).filter((item) => item.title && item.image)
+}
+
 export async function getProperties() {
-  if (!SHEET_CSV_URL) return propertyConcepts
+  const fallbackListings = getFallbackListings()
+
+  if (!SHEET_CSV_URL) return fallbackListings
 
   try {
     const response = await fetch(SHEET_CSV_URL)
@@ -74,21 +101,22 @@ export async function getProperties() {
       description: String(item.description || ''),
       image: String(item.mainImage || ''),
       imageAlt: `Imagem do imóvel ${String(item.title || index + 1)}`,
-      price: item.price ? String(item.price) : undefined,
+      price: item.price === null || item.price === undefined || item.price === '' ? undefined : String(item.price),
       location: [item.address, item.neighborhood, item.city].filter(Boolean).join(', '),
-      area: item.area ? String(item.area) : undefined,
-      bedrooms: item.bedrooms ? String(item.bedrooms) : undefined,
-      bathrooms: item.bathrooms ? String(item.bathrooms) : undefined,
-      parking: item.parkingSpaces ? String(item.parkingSpaces) : undefined,
+      area: item.area === null || item.area === undefined || item.area === '' ? undefined : String(item.area),
+      bedrooms: item.bedrooms === null || item.bedrooms === undefined || item.bedrooms === '' ? undefined : String(item.bedrooms),
+      bathrooms: item.bathrooms === null || item.bathrooms === undefined || item.bathrooms === '' ? undefined : String(item.bathrooms),
+      parking: item.parkingSpaces === null || item.parkingSpaces === undefined || item.parkingSpaces === '' ? undefined : String(item.parkingSpaces),
       sourceUrl: undefined,
       isConcept: false as const,
     })).filter((item) => item.title && item.image)
 
-    // Nunca mistura os dois catálogos: havendo imóveis reais, usa apenas eles.
-    return properties.length > 0 ? properties : propertyConcepts
+    // Havendo qualquer imóvel real no Google Sheets, usa somente o catálogo da nuvem.
+    // O CSV local de docs/google-sheets entra apenas quando a API responde vazia.
+    return properties.length > 0 ? properties : fallbackListings
   } catch (error) {
-    console.warn('Could not load properties from Google Sheets.', error)
-    return propertyConcepts
+    console.warn('Could not load properties from Google Sheets. Using docs/google-sheets fallback.', error)
+    return fallbackListings
   }
 }
 
