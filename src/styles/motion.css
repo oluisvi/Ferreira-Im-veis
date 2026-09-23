@@ -65,3 +65,21 @@ body.intro-active .floating-whatsapp { opacity:0!important; visibility:hidden!im
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
   .intro-portal { display:none; }
 }
+
+/* Fixed conversion actions */
+.back-to-top { position:fixed; right:1rem; bottom:max(5.8rem, calc(env(safe-area-inset-bottom) + 5.8rem)); z-index:61; width:3rem; height:3rem; display:grid; place-items:center; border:1px solid rgba(20,19,16,.15); border-radius:50%; background:rgba(255,253,249,.94); color:var(--ink); box-shadow:0 .8rem 2rem rgba(20,19,16,.12); backdrop-filter:blur(12px); cursor:pointer; opacity:0; visibility:hidden; transform:translateY(.6rem); transition:opacity .25s ease,transform .3s ease,visibility 0s linear .3s,background .2s ease,color .2s ease; }
+.back-to-top.is-visible { opacity:1; visibility:visible; transform:none; transition-delay:0s; }
+.back-to-top:hover { background:var(--ink); color:white; }
+body.intro-active .back-to-top { opacity:0!important; visibility:hidden!important; pointer-events:none!important; }
+
+@media (min-width:800px) {
+  .back-to-top { right:1.5rem; bottom:6.2rem; }
+  .floating-whatsapp { bottom:1.5rem; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .catalog-card:hover, .property-detail__contact-card:hover { transform:translateY(-4px); }
+  .catalog-card, .property-detail__contact-card { transition:transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease; }
+  .catalog-card:hover { box-shadow:0 1.1rem 3rem rgba(20,19,16,.08); }
+  a,button { transition-timing-function:cubic-bezier(.16,1,.3,1); }
+}

@@ -1,13 +1,30 @@
 import { BrandMark } from './BrandMark'
-import { CRECI, WHATSAPP_NUMBER_DISPLAY, buildWhatsAppUrl, navigation } from '../content/siteContent'
+import { CRECI, WHATSAPP_NUMBER_DISPLAY, buildWhatsAppUrl } from '../content/siteContent'
 
 export function Footer() {
   return (
-    <footer className="footer">
-      <div className="footer__brand"><BrandMark /><p>Conectando pessoas a novos começos.<br />CRECI {CRECI}</p></div>
-      <div className="footer__links"><strong>Links</strong>{navigation.map((item) => <a href={item.href} key={item.href}>{item.label}</a>)}</div>
-      <div className="footer__contact"><strong>Fale conosco</strong><a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">WhatsApp · {WHATSAPP_NUMBER_DISPLAY} ↗</a><span>Atendimento direto</span></div>
-      <div className="footer__bottom"><small>© {new Date().getFullYear()} Ferreira Corretor de Imóveis. Todos os direitos reservados.</small><a href="/#inicio">Voltar ao início ↑</a></div>
+    <footer className="footer" data-reveal="rise">
+      <div className="footer__brand">
+        <BrandMark />
+        <p>Curadoria e atendimento direto para compra e locação de imóveis, com acompanhamento do primeiro contato à negociação.</p>
+        <span className="footer__creci">CRECI {CRECI}</span>
+      </div>
+      <div className="footer__social">
+        <strong>Redes e contato</strong>
+        <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a>
+        <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Instagram <span>↗</span></a>
+        <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Facebook <span>↗</span></a>
+      </div>
+      <div className="footer__contact">
+        <strong>Atendimento</strong>
+        <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">{WHATSAPP_NUMBER_DISPLAY} ↗</a>
+        <span>Atendimento direto pelo corretor</span>
+        <a className="footer__catalog" href="/imoveis">Ver catálogo de imóveis →</a>
+      </div>
+      <div className="footer__bottom">
+        <small>© {new Date().getFullYear()} Ferreira Corretor de Imóveis · CRECI {CRECI}. Todos os direitos reservados.</small>
+        <small>Compra, venda e locação de imóveis com atendimento personalizado.</small>
+      </div>
     </footer>
   )
 }

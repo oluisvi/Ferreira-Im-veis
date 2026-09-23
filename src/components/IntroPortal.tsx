@@ -13,7 +13,6 @@ type IntroPortalProps = { waitForReady?: () => Promise<void> }
 function hasReducedMotion() { return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) }
 function shouldPlayIntro() {
   if (typeof window === 'undefined') return false
-  try { if (window.sessionStorage.getItem(INTRO_SESSION_KEY) === 'seen') return false } catch { /* non-blocking */ }
   return !hasReducedMotion()
 }
 function decodeImage(image: HTMLImageElement) { return typeof image.decode === 'function' ? image.decode().catch(() => undefined) : Promise.resolve() }
@@ -41,7 +40,6 @@ function waitForStablePaint() {
 }
 function markIntroAsSeen() {
   document.body.classList.add('intro-completed')
-  try { window.sessionStorage.setItem(INTRO_SESSION_KEY, 'seen') } catch { /* non-blocking */ }
 }
 
 export function IntroPortal({ waitForReady = waitForCriticalContent }: IntroPortalProps = {}) {

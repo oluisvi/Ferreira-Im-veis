@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CatalogFilters } from '../components/CatalogFilters'
 import { CatalogPropertyCard } from '../components/CatalogPropertyCard'
-import { FloatingWhatsApp } from '../components/FloatingWhatsApp'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { buildWhatsAppUrl } from '../content/siteContent'
@@ -42,7 +41,6 @@ export function PropertiesPage() {
           </section>
         </div>
       </main>
-      <FloatingWhatsApp />
       <Footer />
     </>
   )

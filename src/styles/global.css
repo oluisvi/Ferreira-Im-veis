@@ -66,3 +66,18 @@ em { font-family: var(--serif); font-weight: 400; color: var(--accent-strong); }
   .footer { grid-template-columns: 1.3fr .55fr .8fr; }
   .footer__bottom { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; }
 }
+
+/* Brand mark sourced from the provided Ferreira logo artwork */
+.brand__symbol { width:3.15rem; height:2.45rem; display:grid; place-items:center; flex:0 0 auto; overflow:hidden; }
+.brand__symbol img { width:100%; height:100%; object-fit:contain; filter:none; }
+.footer .brand__symbol img, .intro-portal .brand__symbol img { filter:invert(1); }
+.brand--compact .brand__symbol { width:2.8rem; height:2.15rem; }
+
+/* Footer focused on trust, contact and social discovery */
+.footer__social { display:grid; align-content:start; gap:.72rem; font-size:.75rem; }
+.footer__social strong { margin-bottom:.4rem; color:var(--accent); text-transform:uppercase; letter-spacing:.12em; font-size:.58rem; }
+.footer__social a { display:flex; justify-content:space-between; gap:1rem; padding-bottom:.55rem; border-bottom:1px solid rgba(246,243,236,.12); transition:color .2s ease,border-color .2s ease; }
+.footer__social a:hover { color:var(--accent); border-color:rgba(170,136,76,.6); }
+.footer__creci { display:inline-block; margin-top:1rem; color:var(--accent)!important; font-size:.62rem; letter-spacing:.11em; text-transform:uppercase; }
+.footer__catalog { margin-top:.45rem; color:var(--paper); }
+@media (min-width:900px) { .footer { grid-template-columns:1.35fr .55fr .8fr; } }
