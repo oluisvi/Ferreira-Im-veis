@@ -1,6 +1,6 @@
 import { propertyConcepts, type PropertyCategory, type PropertyListing } from './siteContent'
 
-export const SHEET_CSV_URL = import.meta.env.VITE_PROPERTIES_CSV_URL as string | undefined
+export const SHEET_CSV_URL = (import.meta.env.VITE_PROPERTIES_CSV_URL as string | undefined) || '/api/properties'
 
 type PropertyRow = Record<string, string>
 
