@@ -240,6 +240,21 @@ body.intro-active { overflow: hidden; }
 body.intro-active .floating-whatsapp { opacity:0!important; visibility:hidden!important; pointer-events:none!important; }
 
 @media (min-width: 800px) { .floating-whatsapp { left:auto; right:1.5rem; width:20rem; } }
+
+/* Lightweight page loader: shown once per browser tab on the homepage. */
+.intro-portal { background: var(--ink); }
+.intro-portal::before, .intro-portal::after { display: none; }
+.page-loader { position:absolute; top:50%; left:50%; display:flex; width:3.8rem; height:3.2rem; gap:.18rem; transform:translate(-50%,-50%); }
+.page-loader__bar { flex:1; height:100%; transform:scaleY(.06); transform-origin:center; background:var(--accent); animation:pageLoaderPulse .8s infinite ease-in-out; }
+.page-loader__bar--1 { animation-delay:0s; background:#e1c27e; }
+.page-loader__bar--2 { animation-delay:-.7s; background:#d2b274; }
+.page-loader__bar--3 { animation-delay:-.6s; background:#b89455; }
+.page-loader__bar--4 { animation-delay:-.5s; background:#c9aa70; }
+.page-loader__bar--5 { animation-delay:-.4s; background:#e0c58c; }
+.page-loader__bar--6 { animation-delay:-.3s; background:#9b743d; }
+.intro-portal--revealing { animation:pageLoaderReveal .52s cubic-bezier(.76,0,.24,1) both; }
+@keyframes pageLoaderPulse { 0%,40%,100% { transform:scaleY(.06); } 20% { transform:scaleY(1); } }
+@keyframes pageLoaderReveal { from { clip-path:inset(0); } to { clip-path:inset(0 0 100%); } }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior:auto; }
   *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; }
