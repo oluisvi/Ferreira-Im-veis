@@ -1,5 +1,6 @@
 import { BrandMark } from './BrandMark'
 import { CRECI, WHATSAPP_NUMBER_DISPLAY, buildWhatsAppUrl } from '../content/siteContent'
+import { trackWhatsAppClick } from '../analytics/tracker'
 
 export function Footer() {
   return (
@@ -11,13 +12,13 @@ export function Footer() {
       </div>
       <div className="footer__social">
         <strong>Redes e contato</strong>
-        <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">WhatsApp <span>↗</span></a>
+        <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('footer_link')}>WhatsApp <span>↗</span></a>
         <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Instagram <span>↗</span></a>
         <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Facebook <span>↗</span></a>
       </div>
       <div className="footer__contact">
         <strong>Atendimento</strong>
-        <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">{WHATSAPP_NUMBER_DISPLAY} ↗</a>
+        <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('footer_phone')}>{WHATSAPP_NUMBER_DISPLAY} ↗</a>
         <span>Atendimento direto pelo corretor</span>
         <a className="footer__catalog" href="/imoveis">Ver catálogo de imóveis →</a>
       </div>

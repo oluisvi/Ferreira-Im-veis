@@ -73,11 +73,13 @@
 .admin-report__state strong { color:#171614; font-family:var(--serif); font-size:1.8rem; font-weight:400; }
 .admin-report__state p { margin:.4rem 0 0; font-size:.75rem; }
 
-.admin-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; padding:1.5rem 0; }
+.admin-kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.8rem; padding:1.5rem 0; }
 .admin-kpis article { min-height:10.5rem; padding:1.15rem; display:flex; flex-direction:column; justify-content:space-between; border:1px solid rgba(23,22,20,.12); background:rgba(255,253,249,.7); }
 .admin-kpis article.is-highlight { background:#171614; color:white; border-color:#171614; }
 .admin-kpis article > span { color:#81786f; font-size:.56rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; }
 .admin-kpis article.is-highlight > span,.admin-kpis article.is-highlight small { color:rgba(255,255,255,.55); }
+.admin-kpis article.is-contact { border-color:rgba(167,127,62,.42); background:rgba(194,154,84,.08); }
+.admin-kpis article.is-contact > span { color:#8f6b32; }
 .admin-kpis strong { font-family:var(--serif); font-size:clamp(2.2rem,4vw,3.5rem); font-weight:400; letter-spacing:-.04em; }
 .admin-kpis small { color:#8b8279; font-size:.64rem; line-height:1.45; }
 

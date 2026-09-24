@@ -1,6 +1,7 @@
 import { buildWhatsAppUrl, CRECI } from '../content/siteContent'
 import { ArchitecturalFrame } from './ArchitecturalFrame'
 import { QuickPropertySearch } from './QuickPropertySearch'
+import { trackWhatsAppClick } from '../analytics/tracker'
 
 export function Hero() {
   return (
@@ -22,7 +23,7 @@ export function Hero() {
         <p>Explore oportunidades selecionadas e conte com atendimento direto para encontrar o que realmente combina com você.</p>
         <div className="hero__actions">
           <a className="button button--accent" href="/imoveis">Ver imóveis <span>→</span></a>
-          <a className="text-link text-link--light" href={buildWhatsAppUrl('Olá, Ferreira! Quero ajuda para encontrar um imóvel.')} target="_blank" rel="noreferrer">Falar com o corretor ↗</a>
+          <a className="text-link text-link--light" href={buildWhatsAppUrl('Olá, Ferreira! Quero ajuda para encontrar um imóvel.')} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('hero')}>Falar com o corretor ↗</a>
         </div>
       </div>
       <div className="hero__message" data-reveal="rise"><span>Mais que anúncios.</span><strong>Decisões acompanhadas de perto.</strong></div>

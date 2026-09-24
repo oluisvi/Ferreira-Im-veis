@@ -25,6 +25,17 @@ type ClarityPage = {
 
 type ClarityBreakdown = { label: string; pageSessions: number; share: number }
 
+type WhatsAppBreakdown = { label: string; count: number; share: number }
+
+type WhatsAppStats = {
+  available: boolean
+  total: number
+  sources: WhatsAppBreakdown[]
+  pages: WhatsAppBreakdown[]
+  properties: WhatsAppBreakdown[]
+  message?: string
+}
+
 type ClarityReport = {
   periodDays: number
   generatedAt: string
@@ -42,6 +53,7 @@ type ClarityReport = {
   pages: ClarityPage[]
   devices: ClarityBreakdown[]
   sources: ClarityBreakdown[]
+  whatsapp?: WhatsAppStats
   notes: {
     sessionDefinition: string
     conversionDefinition: string
@@ -74,6 +86,25 @@ function formatSeconds(value: number) {
 function cleanSourceLabel(value: string) {
   if (!value || value === 'Não identificado') return 'Direto / não identificado'
   return value
+}
+
+
+function cleanWhatsAppSource(value: string) {
+  const labels: Record<string, string> = {
+    floating_button: 'Botão flutuante',
+    header_desktop: 'Header · desktop',
+    header_mobile: 'Menu mobile',
+    hero: 'Hero · início',
+    footer_link: 'Footer · WhatsApp',
+    footer_phone: 'Footer · telefone',
+    home_property_card: 'Card de imóvel · início',
+    property_card: 'Card do catálogo',
+    contact: 'Seção de contato',
+    empty_results: 'Busca sem resultados',
+    property_page: 'Página do imóvel',
+    property_mobile: 'CTA mobile do imóvel',
+  }
+  return labels[value] || value || 'Não identificado'
 }
 
 function readStoredReport(days: number): ClarityReport | null {
@@ -311,9 +342,9 @@ export function Admin() {
         ) : (
           <section className="admin-panel admin-report">
             <header className="admin-header admin-report__header">
-              <span>Microsoft Clarity · comportamento</span>
+              <span>Clarity + Google Sheets · comportamento e contato</span>
               <div className="admin-header__row">
-                <div><h1>Relatório de comportamento</h1><p>Uma leitura rápida de intenção, profundidade de navegação e sinais de atrito para ajudar a entender onde os potenciais clientes avançam ou travam.</p></div>
+                <div><h1>Relatório de comportamento</h1><p>Uma leitura rápida de intenção, profundidade de navegação, sinais de atrito e cliques de contato para entender onde os potenciais clientes avançam ou travam.</p></div>
                 <a className="admin-clarity-link" href="https://clarity.microsoft.com/" target="_blank" rel="noreferrer">Abrir Clarity <span>↗</span></a>
               </div>
             </header>
@@ -332,6 +363,7 @@ export function Admin() {
                 <div className="admin-kpis">
                   <article><span>Sessões por página</span><strong>{report.summary.pageSessions.toLocaleString('pt-BR')}</strong><small>atividade acumulada nas URLs</small></article>
                   <article className="is-highlight"><span>Interesse em imóveis</span><strong>{report.summary.propertyIntentRate.toLocaleString('pt-BR')}%</strong><small>{report.summary.propertyIntentSessions.toLocaleString('pt-BR')} sessões em catálogo/detalhes</small></article>
+                  <article className="is-contact"><span>Cliques no WhatsApp</span><strong>{report.whatsapp?.available ? report.whatsapp.total.toLocaleString('pt-BR') : '—'}</strong><small>{report.whatsapp?.available ? `registrados nas últimas ${report.periodDays * 24}h` : 'registro próprio ainda não disponível'}</small></article>
                   <article><span>Scroll médio</span><strong>{report.summary.averageScrollDepth.toLocaleString('pt-BR')}%</strong><small>profundidade média das páginas</small></article>
                   <article><span>Engajamento médio</span><strong>{formatSeconds(report.summary.averageEngagementSeconds)}</strong><small>tempo médio por sessão de página</small></article>
                 </div>
@@ -364,6 +396,15 @@ export function Admin() {
                   </section>
 
                   <section className="admin-report-card">
+                    <header><div><span>Contato</span><h2>Origem dos cliques no WhatsApp</h2></div><small>Mostra quais CTAs estão gerando mais contatos.</small></header>
+                    {report.whatsapp?.available ? (
+                      report.whatsapp.sources.length > 0 ? (
+                        <div className="admin-breakdown">{report.whatsapp.sources.map((item) => <div key={item.label}><div><span>{cleanWhatsAppSource(item.label)}</span><strong>{item.count.toLocaleString('pt-BR')} · {item.share.toLocaleString('pt-BR')}%</strong></div><i><b style={{ width: `${Math.min(item.share, 100)}%` }} /></i></div>)}</div>
+                      ) : <p className="admin-report-card__hint">Ainda não houve cliques de WhatsApp registrados neste período.</p>
+                    ) : <p className="admin-report-card__hint">{report.whatsapp?.message || 'A contagem de cliques ainda não está disponível.'}</p>}
+                  </section>
+
+                  <section className="admin-report-card">
                     <header><div><span>Contexto</span><h2>Dispositivos</h2></div></header>
                     <div className="admin-breakdown">{report.devices.map((item) => <div key={item.label}><div><span>{item.label}</span><strong>{item.share.toLocaleString('pt-BR')}%</strong></div><i><b style={{ width: `${Math.min(item.share, 100)}%` }} /></i></div>)}</div>
                   </section>
@@ -375,8 +416,8 @@ export function Admin() {
 
                   <section className="admin-report-card admin-report-card--conversion">
                     <header><div><span>Conversão</span><h2>Como ler as leads</h2></div></header>
-                    <div className="admin-conversion-flow"><div><span>01</span><strong>Visita</strong><small>entrada no site</small></div><i>→</i><div><span>02</span><strong>Interesse</strong><small>/imoveis e detalhes</small></div><i>→</i><div><span>03</span><strong>Contato</strong><small>evento whatsapp_click</small></div></div>
-                    <p>{report.notes.customEvents}</p>
+                    <div className="admin-conversion-flow"><div><span>01</span><strong>Visita</strong><small>entrada no site</small></div><i>→</i><div><span>02</span><strong>Interesse</strong><small>/imoveis e detalhes</small></div><i>→</i><div><span>03</span><strong>Contato</strong><small>{report.whatsapp?.available ? `${report.whatsapp.total.toLocaleString('pt-BR')} clique${report.whatsapp.total === 1 ? '' : 's'} no período` : 'evento whatsapp_click'}</small></div></div>
+                    <p>{report.notes.customEvents} A contagem exibida aqui começa após a publicação desta versão do rastreamento.</p>
                     <a href="https://clarity.microsoft.com/" target="_blank" rel="noreferrer">Revisar Smart Events e gravações no Clarity ↗</a>
                   </section>
                 </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BRAND_NAME, CRECI, buildWhatsAppUrl, navigation } from '../content/siteContent'
 import { BrandMark } from './BrandMark'
+import { trackWhatsAppClick } from '../analytics/tracker'
 
 export function Header({ variant = 'overlay' }: { variant?: 'overlay' | 'solid' }) {
   const [open, setOpen] = useState(false)
@@ -52,7 +53,7 @@ export function Header({ variant = 'overlay' }: { variant?: 'overlay' | 'solid' 
           ))}
         </div>
         <div className="nav__mobile-footer">
-          <a className="nav__whatsapp" href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">
+          <a className="nav__whatsapp" href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('header_mobile')}>
             <span>Atendimento direto</span>
             <strong>Falar no WhatsApp</strong>
             <i aria-hidden="true">↗</i>
@@ -60,7 +61,7 @@ export function Header({ variant = 'overlay' }: { variant?: 'overlay' | 'solid' 
           <div><span>Ferreira Corretor de Imóveis</span><small>CRECI {CRECI}</small></div>
         </div>
       </nav>
-      <a className="header__contact" href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer">
+      <a className="header__contact" href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('header_desktop')}>
         Falar no WhatsApp <span aria-hidden="true">↗</span>
       </a>
     </header>

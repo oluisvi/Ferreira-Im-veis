@@ -3,6 +3,22 @@ import { requireAdmin } from '../server/admin-auth.ts'
 type ClarityRow = Record<string, string | number | null | undefined>
 type ClarityMetric = { metricName?: string; information?: ClarityRow[] }
 
+
+type WhatsAppBreakdown = {
+  label: string
+  count: number
+  share: number
+}
+
+type WhatsAppStats = {
+  available: boolean
+  total: number
+  sources: WhatsAppBreakdown[]
+  pages: WhatsAppBreakdown[]
+  properties: WhatsAppBreakdown[]
+  message?: string
+}
+
 type PageAccumulator = {
   url: string
   pageSessions: number
@@ -64,6 +80,64 @@ function percentage(value: number) {
 
 function seconds(value: number) {
   return Math.round(value)
+}
+
+
+function normalizeWhatsAppBreakdown(value: unknown): WhatsAppBreakdown[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      const row = item && typeof item === 'object' ? item as Record<string, unknown> : {}
+      return {
+        label: String(row.label || 'Não identificado'),
+        count: Math.max(0, Math.round(numberValue(row.count))),
+        share: percentage(numberValue(row.share)),
+      }
+    })
+    .filter((item) => item.count > 0)
+    .slice(0, 10)
+}
+
+async function fetchWhatsAppStats(days: number): Promise<WhatsAppStats> {
+  const scriptUrl = process.env.PROPERTIES_SCRIPT_URL || process.env.VITE_PROPERTIES_SCRIPT_URL
+  const unavailable: WhatsAppStats = {
+    available: false,
+    total: 0,
+    sources: [],
+    pages: [],
+    properties: [],
+    message: 'Atualize e publique o Google Apps Script para habilitar a contagem de cliques no painel.',
+  }
+
+  if (!scriptUrl) return { ...unavailable, message: 'Configure PROPERTIES_SCRIPT_URL para habilitar a contagem de cliques no WhatsApp.' }
+
+  try {
+    const url = new URL(scriptUrl)
+    url.searchParams.set('action', 'whatsapp-report')
+    url.searchParams.set('days', String(days))
+
+    const upstream = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!upstream.ok) return unavailable
+
+    const payload = await upstream.json() as Record<string, unknown>
+    if (payload.available !== true) return unavailable
+
+    return {
+      available: true,
+      total: Math.max(0, Math.round(numberValue(payload.total))),
+      sources: normalizeWhatsAppBreakdown(payload.sources),
+      pages: normalizeWhatsAppBreakdown(payload.pages),
+      properties: normalizeWhatsAppBreakdown(payload.properties),
+    }
+  } catch (error) {
+    console.error('Falha ao carregar cliques do WhatsApp:', error)
+    return unavailable
+  }
 }
 
 function buildReport(metrics: ClarityMetric[], days: number) {
@@ -193,12 +267,12 @@ function buildReport(metrics: ClarityMetric[], days: number) {
     notes: {
       sessionDefinition: 'Os totais desta tela são sessões por página. Uma mesma sessão pode aparecer em mais de uma URL.',
       conversionDefinition: 'Interesse em imóveis é um proxy baseado em visitas a /imoveis e páginas de imóvel; não representa uma venda concluída.',
-      customEvents: 'Cliques de WhatsApp continuam sendo enviados ao Clarity como evento whatsapp_click e podem ser analisados em Smart Events/Recordings no painel do Clarity.',
+      customEvents: 'Os cliques de WhatsApp continuam sendo enviados ao Clarity como whatsapp_click e agora também são registrados na planilha para aparecerem neste painel.',
     },
   }
 }
 
-const memoryCache = new Map<number, { expiresAt: number; report: ReturnType<typeof buildReport> }>()
+const memoryCache = new Map<number, { expiresAt: number; report: ReturnType<typeof buildReport> & { whatsapp: WhatsAppStats } }>()
 
 export default async function handler(request: any, response: any) {
   if (request.method !== 'GET') {
@@ -248,7 +322,9 @@ export default async function handler(request: any, response: any) {
     }
 
     const payload = await clarityResponse.json() as ClarityMetric[]
-    const report = buildReport(Array.isArray(payload) ? payload : [], days)
+    const baseReport = buildReport(Array.isArray(payload) ? payload : [], days)
+    const whatsapp = await fetchWhatsAppStats(days)
+    const report = { ...baseReport, whatsapp }
     memoryCache.set(days, { expiresAt: Date.now() + 15 * 60 * 1000, report })
     response.setHeader('Cache-Control', 'private, max-age=900')
     return response.status(200).json(report)

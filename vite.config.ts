@@ -7,6 +7,7 @@ import adminSessionHandler from './api/admin-session.ts'
 import adminPropertyHandler from './api/admin-property.ts'
 import adminClarityHandler from './api/admin-clarity.ts'
 import uploadImageHandler from './api/upload-image.ts'
+import whatsappClickHandler from './api/whatsapp-click.ts'
 import propertiesHandler from './api/properties.js'
 
 const apiHandlers: Record<string, (request: any, response: any) => Promise<any>> = {
@@ -16,10 +17,11 @@ const apiHandlers: Record<string, (request: any, response: any) => Promise<any>>
   '/api/admin-property': adminPropertyHandler,
   '/api/admin-clarity': adminClarityHandler,
   '/api/upload-image': uploadImageHandler,
+  '/api/whatsapp-click': whatsappClickHandler,
   '/api/properties': propertiesHandler,
 }
 
-const jsonBodyRoutes = new Set(['/api/admin-login', '/api/admin-property'])
+const jsonBodyRoutes = new Set(['/api/admin-login', '/api/admin-property', '/api/whatsapp-click'])
 
 function readJsonBody(request: any) {
   return new Promise<Record<string, unknown>>((resolve, reject) => {
