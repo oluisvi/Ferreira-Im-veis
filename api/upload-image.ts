@@ -1,4 +1,5 @@
 import { put } from '@vercel/blob'
+import { requireAdmin } from '../server/admin-auth.ts'
 
 export const config = {
   api: {
@@ -11,6 +12,8 @@ export default async function handler(request: any, response: any) {
     response.status(405).json({ error: 'Método não permitido' })
     return
   }
+
+  if (!requireAdmin(request, response)) return
 
   const contentType = request.headers['content-type'] || 'image/jpeg'
   const filename = String(request.headers['x-filename'] || `ferreira-${Date.now()}.jpg`)

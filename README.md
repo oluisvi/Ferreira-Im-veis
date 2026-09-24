@@ -9,9 +9,10 @@ Produção: https://ferreiracorretordeimoveis.vercel.app/
 - `/` — página institucional, busca rápida e seleção de imóveis.
 - `/imoveis` — catálogo completo com filtros e cards.
 - `/imoveis/:codigo` — ficha exclusiva compatível com links antigos, com galeria, dados, descrição, localização e WhatsApp.
-- `/admin` — cadastro de imóvel, upload de imagem e envio para a planilha.
+- `/admin` — painel autenticado para cadastro de imóveis e relatório de comportamento do Microsoft Clarity.
 - `/api/properties` — API serverless que lê o catálogo.
-- `/api/upload-image` — API serverless de upload para o Vercel Blob.
+- `/api/upload-image` — API autenticada de upload para o Vercel Blob.
+- `/api/admin-clarity` — relatório agregado do Clarity para o painel administrativo.
 
 O catálogo atual tem 16 imóveis ativos. A home mostra uma seleção reduzida; `/imoveis` mostra todos. No card do catálogo, o botão “Conversar sobre este imóvel” abre diretamente o WhatsApp com o código e o título do imóvel.
 
@@ -47,13 +48,20 @@ npm run preview     # prévia do build
 Crie `.env.local` a partir de `.env.example`. Nunca versione esse arquivo nem tokens.
 
 ```env
-VITE_PROPERTIES_SCRIPT_URL=https://script.google.com/macros/s/DEPLOYMENT_ID/exec
+PROPERTIES_SCRIPT_URL=https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 VITE_BLOB_UPLOAD_URL=/api/upload-image
 GOOGLE_SHEET_CSV_URL=https://docs.google.com/spreadsheets/d/ID/export?format=csv&gid=GID
 BLOB_READ_WRITE_TOKEN=token-do-vercel-blob
+
+VITE_CLARITY_PROJECT_ID=seu-project-id
+CLARITY_API_TOKEN=token-data-export
+
+ADMIN_USERNAME=seu-usuario
+ADMIN_PASSWORD=sua-senha-forte
+ADMIN_SESSION_SECRET=uma-chave-longa-e-aleatoria
 ```
 
-Somente variáveis `VITE_*` ficam disponíveis no frontend. `BLOB_READ_WRITE_TOKEN` deve existir somente no ambiente da Vercel.
+Somente variáveis `VITE_*` ficam disponíveis no frontend. Credenciais do admin, `CLARITY_API_TOKEN`, `PROPERTIES_SCRIPT_URL` e `BLOB_READ_WRITE_TOKEN` devem existir somente no ambiente da Vercel.
 
 ## Google Sheets
 
@@ -91,9 +99,17 @@ O fluxo é:
       └→ Google Apps Script → Google Sheets → /api/properties → catálogo
 ```
 
-O Apps Script de referência está em [`docs/google-apps-script.gs`](docs/google-apps-script.gs). Publique-o como Web App e coloque sua URL em `VITE_PROPERTIES_SCRIPT_URL`.
+O Apps Script de referência está em [`docs/google-apps-script.gs`](docs/google-apps-script.gs). Publique-o como Web App e coloque sua URL em `PROPERTIES_SCRIPT_URL`. O navegador envia o cadastro para `/api/admin-property`, que valida a sessão antes de encaminhar os dados ao Apps Script.
 
-O `/admin` não possui autenticação própria. Não trate essa rota como painel privado sem adicionar autenticação ou proteção na Vercel.
+O `/admin` usa usuário e senha definidos em `ADMIN_USERNAME` e `ADMIN_PASSWORD`. A sessão é mantida em cookie `HttpOnly` assinado; `ADMIN_SESSION_SECRET` é recomendado em produção. Uploads e cadastro de imóveis também exigem a sessão válida.
+
+## Relatório do Microsoft Clarity
+
+A aba **Relatório** do `/admin` lê a Data Export API do Clarity por `/api/admin-clarity`. Configure `VITE_CLARITY_PROJECT_ID` para o rastreamento público e `CLARITY_API_TOKEN` somente no servidor. O relatório resume as últimas 24, 48 ou 72 horas por URL, dispositivo e origem, com scroll, engajamento e sinais como dead clicks, rage clicks, quickbacks e scroll excessivo.
+
+O indicador **Interesse em imóveis** é um proxy de intenção baseado em visitas ao catálogo e páginas de imóvel. Cliques para WhatsApp continuam sendo enviados ao Clarity como o evento `whatsapp_click`; a contagem e as gravações desses eventos devem ser revisadas no próprio painel do Clarity. A API oficial de exportação é limitada a 10 chamadas por projeto por dia, por isso o endpoint usa cache curto.
+
+O próprio `/admin` não inicializa Clarity nem Vercel Analytics, evitando que acessos administrativos contaminem os dados dos visitantes. O navegador também mantém o último relatório por 15 minutos para reduzir consultas repetidas à API.
 
 ## Imagens e Blob
 
@@ -143,7 +159,9 @@ Não crie simultaneamente `api/properties.js` e `api/properties.ts`: isso gera c
 
 - Catálogo vazio: confira a leitura pública da planilha e `Status = Ativo`.
 - Imagem quebrada: confirme que a URL é pública e começa com `https://`.
-- Admin não salva: confira `VITE_PROPERTIES_SCRIPT_URL`, o Apps Script publicado e `BLOB_READ_WRITE_TOKEN` na Vercel.
+- Admin não entra: confira `ADMIN_USERNAME`, `ADMIN_PASSWORD` e, se usado, `ADMIN_SESSION_SECRET`.
+- Admin não salva: confira `PROPERTIES_SCRIPT_URL`, o Apps Script publicado e `BLOB_READ_WRITE_TOKEN` na Vercel.
+- Relatório indisponível: confira `CLARITY_API_TOKEN` e o limite diário da Data Export API.
 - Dados antigos: use `Ctrl + F5`; a API pode permanecer em cache por aproximadamente um minuto.
 - Build com conflito: mantenha um único arquivo para cada rota serverless.
 
@@ -153,3 +171,14 @@ Não crie simultaneamente `api/properties.js` e `api/properties.ts`: isso gera c
 - [`IMPLEMENTACAO-CATALOGO-GOOGLE-SHEETS.md`](IMPLEMENTACAO-CATALOGO-GOOGLE-SHEETS.md) — integração do catálogo.
 - [`IMPLEMENTACAO-ENTRADA.md`](IMPLEMENTACAO-ENTRADA.md) — entrada administrativa.
 - [`IMPLEMENTACAO-MOTION.md`](IMPLEMENTACAO-MOTION.md) — animações e transições.
+
+## Login do admin em desenvolvimento local
+
+Ao executar `npm run dev`, o Vite também atende as rotas locais `/api/admin-*`, `/api/properties` e `/api/upload-image`. Isso permite testar `/admin` em `http://localhost:5173/admin` sem precisar executar `vercel dev`.
+
+As credenciais padrão incluídas no `.env` são:
+
+- usuário: `admin`
+- senha: `123456`
+
+Troque essas credenciais e defina `ADMIN_SESSION_SECRET` antes de publicar o site em produção.

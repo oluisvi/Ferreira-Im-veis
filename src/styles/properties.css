@@ -288,3 +288,16 @@
   .property-carousel__slide { flex-basis: calc(100% - 1.65rem); }
   .property-carousel__controls span { min-width: 3.1rem; }
 }
+
+/* Price hierarchy inside the home carousel */
+.property__details { display:grid; gap:.3rem; margin-bottom:.75rem; }
+.property__price { display:block; margin:0; color:var(--ink); font-size:clamp(.88rem,1.35vw,1.05rem); font-weight:650; letter-spacing:.015em; text-transform:none; }
+.property__location { color:var(--muted); font-size:.67rem; line-height:1.45; }
+.property-carousel .property__details { margin:.1rem .25rem .85rem; padding:.7rem .8rem; border-left:2px solid rgba(170,136,76,.68); background:rgba(170,136,76,.065); }
+.property-carousel .property__price { font-size:clamp(.95rem,2vw,1.12rem); }
+.property-carousel .property__location { font-size:.63rem; }
+
+@media (max-width:720px) {
+  .property-carousel .property__details { margin:.05rem .25rem .8rem; padding:.65rem .75rem; }
+  .property-carousel .property__price { font-size:1rem; }
+}
