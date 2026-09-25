@@ -122,3 +122,23 @@
 @media (min-width: 1300px) { .catalog-results { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 
 @media (max-width: 979px) { .property-detail__mobile-cta + .footer { padding-bottom: 6.5rem; } }
+
+/* Clean, consistent property gallery: main image, controls, then the full thumbnail rail. */
+.property-detail__gallery { display:block; background:var(--surface); }
+.property-detail__main-image { position:relative; height:min(62vw, 42rem); min-height:20rem; touch-action:pan-y; cursor:grab; user-select:none; }
+.property-detail__main-image:active { cursor:grabbing; }
+.property-detail__main-image img { display:block; user-select:none; }
+.property-detail__thumbs { display:flex; gap:.55rem; overflow-x:auto; padding:.85rem var(--pad); scrollbar-width:thin; scrollbar-color:var(--accent) transparent; }
+.property-detail__thumbs button { flex:0 0 clamp(5rem, 10vw, 7rem); height:clamp(3.6rem, 7vw, 5rem); border:1px solid transparent; border-radius:.45rem; opacity:.56; transition:opacity .2s ease, border-color .2s ease, transform .2s ease; }
+.property-detail__thumbs button:hover { opacity:.9; transform:translateY(-2px); }
+.property-detail__thumbs button.is-active { opacity:1; border-color:var(--accent); outline:0; box-shadow:0 0 0 2px rgba(170,136,76,.16); }
+.property-detail__gallery-control { position:absolute; top:50%; z-index:2; width:2.8rem; height:2.8rem; display:grid; place-items:center; border:1px solid rgba(255,255,255,.42); border-radius:50%; background:rgba(20,19,16,.62); color:white; font-size:2rem; line-height:1; cursor:pointer; transform:translateY(-50%); backdrop-filter:blur(8px); transition:background .2s ease, transform .2s ease; }
+.property-detail__gallery-control:hover { background:var(--accent); transform:translateY(-50%) scale(1.05); }
+.property-detail__gallery-control--prev { left:1rem; }
+.property-detail__gallery-control--next { right:1rem; }
+.property-detail__gallery-count { position:absolute; right:1rem; bottom:1rem; padding:.45rem .65rem; border:1px solid rgba(255,255,255,.24); border-radius:999px; background:rgba(20,19,16,.62); color:white; font-size:.58rem; letter-spacing:.12em; backdrop-filter:blur(8px); }
+@media (min-width: 980px) {
+  .property-detail__gallery { display:block; }
+  .property-detail__main-image { height:min(68vh, 48rem); }
+  .property-detail__thumbs { padding-block:1rem; }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { buildPropertyWhatsAppUrl, formatArea, formatCurrency, getMapUrl, getPropertyLocation } from '../data/propertyCatalog'
@@ -14,10 +14,13 @@ export function PropertyDetailPage({ code }: { code: string }) {
   const { properties, loading, source } = useProperties()
   const property = useMemo(() => properties.find((item) => item.code.toLowerCase() === code.toLowerCase()), [properties, code])
   const [selectedImage, setSelectedImage] = useState('')
+  const [imageIndex, setImageIndex] = useState(0)
+  const dragStartX = useRef<number | null>(null)
 
   useEffect(() => {
     if (!property) return
     setSelectedImage(property.mainImage || property.photos[0] || '')
+    setImageIndex(0)
     document.title = `${property.title} | Ferreira Corretor de Imóveis`
     trackEvent('property_view', { propertyId: property.code, propertyType: property.type, city: property.city, neighborhood: property.neighborhood })
   }, [property])
@@ -27,6 +30,13 @@ export function PropertyDetailPage({ code }: { code: string }) {
 
   const mapUrl = getMapUrl(property)
   const photos = property.photos.length ? property.photos : [property.mainImage]
+  const selectImage = (index: number) => {
+    const nextIndex = (index + photos.length) % photos.length
+    setImageIndex(nextIndex)
+    setSelectedImage(photos[nextIndex])
+    trackEvent(nextIndex === 0 ? 'property_gallery_open' : 'property_gallery_interaction', { propertyId: property.code, imageIndex: nextIndex + 1, totalImages: photos.length })
+  }
+  const moveImage = (step: number) => selectImage(imageIndex + step)
 
   return (
     <>
@@ -34,8 +44,11 @@ export function PropertyDetailPage({ code }: { code: string }) {
       <main id="conteudo" className="property-detail">
         <div className="property-detail__topbar"><a href="/imoveis">← Voltar aos imóveis</a><span>{property.code}</span></div>
         <section className="property-detail__gallery" aria-label="Galeria do imóvel">
-          <div className="property-detail__main-image"><img src={selectedImage || property.mainImage} alt={property.title} /></div>
-          {photos.length > 1 && <div className="property-detail__thumbs" aria-label={`${photos.length} fotos do imóvel`}>{photos.map((photo, index) => <button type="button" className={photo === selectedImage ? 'is-active' : ''} onClick={() => { setSelectedImage(photo); trackEvent(index === 0 ? 'property_gallery_open' : 'property_gallery_interaction', { propertyId: property.code, imageIndex: index + 1, totalImages: photos.length }) }} key={`${photo}-${index}`} aria-label={`Ver foto ${index + 1} de ${photos.length}`}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
+          <div className="property-detail__main-image" onPointerDown={(event) => { dragStartX.current = event.clientX }} onPointerUp={(event) => { if (dragStartX.current === null) return; const distance = event.clientX - dragStartX.current; dragStartX.current = null; if (Math.abs(distance) > 45) moveImage(distance < 0 ? 1 : -1) }} onPointerCancel={() => { dragStartX.current = null }}>
+            <img src={selectedImage || property.mainImage} alt={`${property.title} — foto ${imageIndex + 1}`} draggable="false" />
+            {photos.length > 1 && <><button type="button" className="property-detail__gallery-control property-detail__gallery-control--prev" onClick={() => moveImage(-1)} aria-label="Foto anterior">‹</button><button type="button" className="property-detail__gallery-control property-detail__gallery-control--next" onClick={() => moveImage(1)} aria-label="Próxima foto">›</button><span className="property-detail__gallery-count">{String(imageIndex + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span></>}
+          </div>
+          {photos.length > 1 && <div className="property-detail__thumbs" aria-label={`${photos.length} fotos do imóvel`}>{photos.map((photo, index) => <button type="button" className={index === imageIndex ? 'is-active' : ''} onClick={() => selectImage(index)} key={`${photo}-${index}`} aria-label={`Ver foto ${index + 1} de ${photos.length}`}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
         </section>
         <section className="property-detail__intro">
           <div><span className="section-kicker">{property.type} · {property.purpose}</span><h1>{property.title}</h1><p>⌖ {getPropertyLocation(property)}</p></div>
