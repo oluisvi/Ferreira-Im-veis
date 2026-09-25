@@ -224,7 +224,7 @@ export function getPropertyLocation(property: Property) {
 }
 
 export function getPropertyRoute(property: Property) {
-  return `/imovel/${encodeURIComponent(property.code)}`
+  return `/imoveis/${encodeURIComponent(property.code)}`
 }
 
 export function buildPropertyWhatsAppUrl(property: Property) {
