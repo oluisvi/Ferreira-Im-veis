@@ -1,4 +1,5 @@
-const SHEET_NAME = 'ferreira-imoveis-template.csv'
+const SHEET_NAME = 'Imoveis'
+const LEGACY_PROPERTY_SHEET_NAME = 'ferreira-imoveis-template.csv'
 const WHATSAPP_SHEET_NAME = 'WhatsAppClicks'
 
 const HEADERS = [
@@ -211,7 +212,11 @@ function valueForHeader(payload, header) {
 
 function getPropertySheet() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet()
-  const sheet = spreadsheet.getSheetByName(SHEET_NAME) || spreadsheet.getSheets()[0]
+  const sheet = spreadsheet.getSheetByName(SHEET_NAME) || spreadsheet.getSheetByName(LEGACY_PROPERTY_SHEET_NAME)
+
+  if (!sheet) {
+    throw new Error('Aba de imóveis não encontrada. Crie ou renomeie a aba para "Imoveis".')
+  }
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(HEADERS)

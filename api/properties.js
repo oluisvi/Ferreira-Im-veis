@@ -108,7 +108,9 @@ export default async function handler(request, response) {
     const rows = parseCsv(csv.replace(/^\uFEFF/, ''))
     const [headers = [], ...dataRows] = rows
     const properties = dataRows.map((row) => normalizeProperty(createRecord(headers, row))).filter(Boolean)
-    response.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
+      // O catálogo muda pelo painel administrativo; não podemos servir imóveis
+      // excluídos durante a janela do cache da CDN.
+      response.setHeader('Cache-Control', 'no-store, max-age=0')
     return response.status(200).json({ source: 'google-sheets', updatedAt: new Date().toISOString(), properties })
   } catch (error) {
     console.error('Falha ao carregar catálogo do Google Sheets:', error)

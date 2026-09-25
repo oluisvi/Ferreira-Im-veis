@@ -317,6 +317,9 @@ export function Admin() {
     const response = await fetch('/api/admin-property', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: property.code, confirmation: true, media: [...property.photos, property.video].filter(Boolean) }) })
     const body = await response.json().catch(() => ({}))
     if (!response.ok) { window.alert(body.error || 'Não foi possível excluir o imóvel.'); return }
+    if (body.mediaCleanupErrors) {
+      window.alert(`O imóvel foi removido da planilha e do catálogo, mas ${body.mediaCleanupErrors} mídia(s) não puderam ser confirmadas na limpeza.`)
+    }
     setManageProperties((current) => current.filter((item) => item.code !== property.code))
     setPendingDelete(null)
   }
