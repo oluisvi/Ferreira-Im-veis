@@ -46,23 +46,35 @@ function doPost(event) {
   return saveProperty(payload)
 }
 
-function findPropertyRow(sheet, code) {
+function normalizePropertyCode(value) {
+  return String(value == null ? '' : value).trim().toLowerCase()
+}
+
+function findPropertyRows(sheet, code) {
   const values = sheet.getDataRange().getValues()
-  const headers = values[0].map(String)
+  const headers = (values[0] || []).map(String)
   const codeColumn = headers.findIndex((header) => ['Código', 'Codigo', 'id', 'ID'].indexOf(header) >= 0)
-  if (codeColumn < 0) return { headers, row: -1 }
+  if (codeColumn < 0) return { headers, rows: [] }
+  const normalizedCode = normalizePropertyCode(code)
+  const rows = []
   for (let index = 1; index < values.length; index += 1) {
-    if (String(values[index][codeColumn]).trim() === String(code).trim()) return { headers, row: index + 1 }
+    if (normalizePropertyCode(values[index][codeColumn]) === normalizedCode) rows.push(index + 1)
   }
-  return { headers, row: -1 }
+  return { headers, rows }
+}
+
+function findPropertyRow(sheet, code) {
+  const found = findPropertyRows(sheet, code)
+  return { headers: found.headers, row: found.rows[0] || -1 }
 }
 
 function deleteProperty(payload) {
   const sheet = getPropertySheet()
-  const found = findPropertyRow(sheet, payload.code)
-  if (found.row < 0) return jsonResponse({ ok: false, error: 'Imóvel não encontrado.' })
-  sheet.deleteRow(found.row)
-  return jsonResponse({ ok: true, deleted: payload.code })
+  const found = findPropertyRows(sheet, payload.code)
+  if (!found.rows.length) return jsonResponse({ ok: false, error: 'Imóvel não encontrado.' })
+  // Exclui de baixo para cima para não alterar os índices das linhas restantes.
+  found.rows.slice().reverse().forEach((row) => sheet.deleteRow(row))
+  return jsonResponse({ ok: true, deleted: payload.code, deletedRows: found.rows.length })
 }
 
 function updateProperty(payload) {
