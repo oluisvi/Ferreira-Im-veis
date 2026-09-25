@@ -1,0 +1,13 @@
+{
+  "name": "Ferreira Corretor de Imóveis",
+  "short_name": "Ferreira Imóveis",
+  "description": "Catálogo imobiliário e painel administrativo da Ferreira Corretor de Imóveis.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f3ec",
+  "theme_color": "#f6f3ec",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
