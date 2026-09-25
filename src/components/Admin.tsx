@@ -1,7 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
 import { type Property } from '../data/propertyCatalog'
-
-const BLOB_UPLOAD_URL = import.meta.env.VITE_BLOB_UPLOAD_URL || '/api/upload-image'
+import { upload } from '@vercel/blob/client'
 
 type AuthState = 'checking' | 'anonymous' | 'authenticated'
 type AdminView = 'home' | 'properties' | 'manage' | 'report'
@@ -129,6 +128,12 @@ function storeReport(days: number, report: ClarityReport) {
   }
 }
 
+function mediaSummary(files: File[]) {
+  const photos = files.filter((file) => file.type.startsWith('image/')).length
+  const videos = files.filter((file) => file.type.startsWith('video/')).length
+  return [photos ? `${photos} foto${photos > 1 ? 's' : ''}` : '', videos ? `${videos} vídeo${videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')
+}
+
 export function Admin() {
   const [authState, setAuthState] = useState<AuthState>('checking')
   const [authConfigured, setAuthConfigured] = useState(true)
@@ -139,7 +144,6 @@ export function Admin() {
   const [view, setView] = useState<AdminView>('home')
 
   const [values, setValues] = useState(initialValues)
-  const [imageFile, setImageFile] = useState<File | null>(null)
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [saveMessage, setSaveMessage] = useState('')
@@ -147,6 +151,7 @@ export function Admin() {
   const [manageStatus, setManageStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const manageLoaded = useRef(false)
   const [editingCode, setEditingCode] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<Property | null>(null)
 
   const [reportDays, setReportDays] = useState(3)
   const [reportStatus, setReportStatus] = useState<ReportStatus>('idle')
@@ -233,10 +238,8 @@ export function Admin() {
       let imageUrl = values.imagem
       let videoUrl = values.video
       const uploaded = await Promise.all(mediaFiles.map(async (file) => {
-        const upload = await fetch(BLOB_UPLOAD_URL, { method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream', 'X-Filename': file.name }, body: file })
-        const uploadBody = await upload.json().catch(() => ({}))
-        if (!upload.ok) throw new Error(uploadBody.error || `Falha ao enviar ${file.name}`)
-        return { file, url: uploadBody.url as string }
+        const blob = await upload(`imoveis/${file.name}`, file, { access: 'public', handleUploadUrl: '/api/upload-token', multipart: true })
+        return { file, url: blob.url }
       }))
       const uploadedImages = uploaded.filter(({ file }) => file.type.startsWith('image/')).map(({ url }) => url)
       const uploadedVideo = uploaded.find(({ file }) => file.type.startsWith('video/'))?.url
@@ -256,7 +259,6 @@ export function Admin() {
 
       setValues(initialValues)
       setEditingCode('')
-      setImageFile(null)
       setMediaFiles([])
       setStatus('success')
       setSaveMessage('Imóvel enviado para a planilha com sucesso.')
@@ -291,7 +293,6 @@ export function Admin() {
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    setImageFile(event.target.files?.[0] ?? null)
     setMediaFiles(event.target.files ? Array.from(event.target.files) : [])
   }
 
@@ -307,12 +308,17 @@ export function Admin() {
   }
 
   async function deleteProperty(property: Property) {
-    const confirmation = window.prompt(`Para excluir definitivamente “${property.title}”, digite o código ${property.code}.`)
-    if (confirmation !== property.code) return
-    const response = await fetch('/api/admin-property', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: property.code, confirmation, media: [...property.photos, property.video].filter(Boolean) }) })
+    setPendingDelete(property)
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const property = pendingDelete
+    const response = await fetch('/api/admin-property', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: property.code, confirmation: true, media: [...property.photos, property.video].filter(Boolean) }) })
     const body = await response.json().catch(() => ({}))
     if (!response.ok) { window.alert(body.error || 'Não foi possível excluir o imóvel.'); return }
     setManageProperties((current) => current.filter((item) => item.code !== property.code))
+    setPendingDelete(null)
   }
 
   if (authState === 'checking') {
@@ -373,7 +379,7 @@ export function Admin() {
               <div className="admin-header__row"><div><h1>{view === 'manage' ? 'Gerenciar imóveis' : editingCode ? 'Editar imóvel' : 'Cadastro de imóveis'}</h1><p>{view === 'manage' ? 'Edite ou exclua definitivamente os imóveis publicados no catálogo.' : editingCode ? `Atualize os dados do imóvel ${editingCode} sem criar uma nova publicação.` : 'Adicione um novo imóvel ao catálogo conectado ao Google Sheets. A publicação segue o status definido abaixo.'}</p></div><div className="admin-header__badge"><i />Conectado ao fluxo de cadastro</div></div>
             </header>
 
-            {view === 'manage' ? <div className="admin-manage-grid">{manageStatus === 'loading' && <p>Carregando imóveis publicados…</p>}{manageStatus === 'error' && <p>Não foi possível carregar os imóveis agora.</p>}{manageStatus !== 'loading' && manageProperties.map((property) => <article key={property.code}><img src={property.mainImage} alt="" /><div><span>{property.code} · {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Preço sob consulta'}</small></div><div><button type="button" onClick={() => startEditing(property)}>Editar</button><button type="button" className="is-danger" onClick={() => void deleteProperty(property)}>Excluir</button></div></article>)}</div> : <form className="admin-form" onSubmit={handleSubmit}>
+            {view === 'manage' ? <><div className="admin-manage-grid">{manageStatus === 'loading' && <p>Carregando imóveis publicados…</p>}{manageStatus === 'error' && <p>Não foi possível carregar os imóveis agora.</p>}{manageStatus !== 'loading' && manageProperties.map((property) => <article key={property.code}><img src={property.mainImage} alt="" /><div><span>{property.code} · {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Preço sob consulta'}</small></div><div><button type="button" onClick={() => startEditing(property)}>Editar</button><button type="button" className="is-danger" onClick={() => void deleteProperty(property)}>Excluir</button></div></article>)}</div>{pendingDelete && <div className="admin-delete-confirm"><strong>Excluir imóvel definitivamente?</strong><p>“{pendingDelete.title}” será removido do catálogo e suas mídias próprias também serão apagadas.</p><div><button type="button" onClick={() => setPendingDelete(null)}>Cancelar</button><button type="button" className="is-danger" onClick={() => void confirmDelete()}>Sim, excluir imóvel</button></div></div>}</> : <form className="admin-form" onSubmit={handleSubmit}>
               <label>Status<select value={values.ativo} onChange={(event) => update('ativo', event.target.value)}><option value="sim">Ativo no site</option><option value="não">Oculto</option></select></label>
               <label>Categoria<select value={values.categoria} onChange={(event) => update('categoria', event.target.value)}><option>Casa</option><option>Apartamento</option><option>Refúgio</option></select></label>
               <label>Título<input value={values.titulo} onChange={(event) => update('titulo', event.target.value)} required /></label>
@@ -384,8 +390,8 @@ export function Admin() {
               <label>Banheiros<input value={values.banheiros} onChange={(event) => update('banheiros', event.target.value)} /></label>
               <label>Vagas<input value={values.vagas} onChange={(event) => update('vagas', event.target.value)} /></label>
               <label className="admin-form__wide">Descrição<textarea value={values.descricao} onChange={(event) => update('descricao', event.target.value)} rows={5} /></label>
-              <label className="admin-form__wide">Fotos e vídeos<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `${mediaFiles.length} arquivo(s) selecionado(s)` : 'Selecione várias fotos ou um vídeo. O primeiro arquivo de imagem será a capa.'}</small></label>
-              <label className="admin-form__wide">Selecionar pasta do imóvel<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>Em Chrome/Edge, escolha a pasta completa e o sistema separa fotos e vídeos.</small></label>
+              <label className="admin-form__wide">Fotos e vídeos<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Selecione várias fotos ou um vídeo. O primeiro arquivo de imagem será a capa.'}</small></label>
+              <label className="admin-form__wide">Selecionar pasta do imóvel<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Em Chrome/Edge, escolha a pasta completa e o sistema separa fotos e vídeos.'}</small></label>
               <label className="admin-form__wide">Vídeo por URL (opcional)<input value={values.video} onChange={(event) => update('video', event.target.value)} placeholder="https://.../tour.mp4" /></label>
               <label className="admin-form__wide">Link da imagem (opcional)<input value={values.imagem} onChange={(event) => update('imagem', event.target.value)} /></label>
               <label className="admin-form__wide">Link do anúncio original<input value={values.link} onChange={(event) => update('link', event.target.value)} /></label>

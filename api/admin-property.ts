@@ -25,8 +25,8 @@ export default async function handler(request: any, response: any) {
       : []
 
     if (request.method === 'DELETE') {
-      if (!payload.code || !payload.confirmation || payload.confirmation !== payload.code) {
-        return response.status(400).json({ error: 'Digite o código do imóvel para confirmar a exclusão.' })
+      if (!payload.code || payload.confirmation !== true) {
+        return response.status(400).json({ error: 'Confirmação de exclusão necessária.' })
       }
       if (media.length) await del(media)
     }

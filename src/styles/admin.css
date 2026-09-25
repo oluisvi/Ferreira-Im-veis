@@ -155,6 +155,12 @@
 .admin-manage-grid button { border:0; background:#171614; color:#fff; padding:.7rem .8rem; font-size:.62rem; cursor:pointer; }
 .admin-manage-grid button + button { margin-left:.4rem; }
 .admin-manage-grid button.is-danger { background:#9b3930; }
+.admin-delete-confirm { margin-top:1.25rem; padding:1.2rem; border:1px solid rgba(155,57,48,.35); background:#fff5f2; }
+.admin-delete-confirm strong { display:block; font-family:var(--serif); font-size:1.45rem; font-weight:400; }
+.admin-delete-confirm p { color:#6e665e; font-size:.72rem; line-height:1.5; }
+.admin-delete-confirm button { border:0; background:#171614; color:white; padding:.7rem .9rem; font-size:.62rem; cursor:pointer; }
+.admin-delete-confirm button + button { margin-left:.5rem; }
+.admin-delete-confirm .is-danger { background:#9b3930; }
 .property-detail__video { margin:clamp(2rem,6vw,5rem) 0; background:#171614; overflow:hidden; }
 .property-detail__video video { display:block; width:100%; max-height:42rem; object-fit:cover; }
 
