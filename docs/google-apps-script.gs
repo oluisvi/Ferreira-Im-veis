@@ -34,7 +34,47 @@ function doPost(event) {
     return saveWhatsAppClick(payload)
   }
 
+  if (payload.action === 'delete_property') {
+    return deleteProperty(payload)
+  }
+
+  if (payload.action === 'update_property') {
+    return updateProperty(payload)
+  }
+
   return saveProperty(payload)
+}
+
+function findPropertyRow(sheet, code) {
+  const values = sheet.getDataRange().getValues()
+  const headers = values[0].map(String)
+  const codeColumn = headers.findIndex((header) => ['Código', 'Codigo', 'id', 'ID'].indexOf(header) >= 0)
+  if (codeColumn < 0) return { headers, row: -1 }
+  for (let index = 1; index < values.length; index += 1) {
+    if (String(values[index][codeColumn]).trim() === String(code).trim()) return { headers, row: index + 1 }
+  }
+  return { headers, row: -1 }
+}
+
+function deleteProperty(payload) {
+  const sheet = getPropertySheet()
+  const found = findPropertyRow(sheet, payload.code)
+  if (found.row < 0) return jsonResponse({ ok: false, error: 'Imóvel não encontrado.' })
+  sheet.deleteRow(found.row)
+  return jsonResponse({ ok: true, deleted: payload.code })
+}
+
+function updateProperty(payload) {
+  const sheet = getPropertySheet()
+  const found = findPropertyRow(sheet, payload.id || payload.code)
+  if (found.row < 0) return jsonResponse({ ok: false, error: 'Imóvel não encontrado.' })
+  const current = sheet.getRange(found.row, 1, 1, found.headers.length).getValues()[0]
+  const row = found.headers.map((header, index) => {
+    const next = valueForHeader(payload, header)
+    return next === '' && current[index] !== '' ? current[index] : next
+  })
+  sheet.getRange(found.row, 1, 1, row.length).setValues([row])
+  return jsonResponse({ ok: true, updated: payload.id || payload.code })
 }
 
 function doGet(event) {
@@ -159,6 +199,7 @@ function valueForHeader(payload, header) {
     'Descrição': payload.descricao,
     'Foto principal': payload.imagem,
     'Fotos': payload.imagens || payload.imagem,
+    'Vídeo': payload.video || '',
     'Corretor': payload.corretor || 'Ferreira',
     'CRECI': payload.creci || '133794-F',
     'WhatsApp': payload.whatsapp || '5512997665886',

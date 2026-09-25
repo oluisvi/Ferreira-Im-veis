@@ -81,7 +81,7 @@ function normalizeProperty(record) {
     bedrooms: parseInteger(pick(record, 'Quartos', 'Dormitórios', 'Dormitorios')), bathrooms: parseInteger(pick(record, 'Banheiros')),
     parkingSpaces: parseInteger(pick(record, 'Vagas', 'Garagens')), area: parseLocaleNumber(pick(record, 'Área', 'Area', 'Metragem')),
     builtArea: parseLocaleNumber(pick(record, 'Área construída', 'AreaConstruida')), lotArea: parseLocaleNumber(pick(record, 'Área terreno', 'AreaTerreno')),
-    description: pick(record, 'Descrição', 'Descricao'), mainImage, photos: uniquePhotos, broker: pick(record, 'Corretor'), creci: pick(record, 'CRECI'),
+    description: pick(record, 'Descrição', 'Descricao'), mainImage, photos: uniquePhotos, video: pick(record, 'Vídeo', 'Video', 'Tour em vídeo', 'Tour em video'), broker: pick(record, 'Corretor'), creci: pick(record, 'CRECI'),
     whatsapp: pick(record, 'WhatsApp').replace(/\D/g, ''), status, featured: parseBoolean(pick(record, 'Destaque')),
     features: splitList(pick(record, 'Diferenciais', 'Comodidades')), palette: splitList(pick(record, 'Paleta')),
     condominiumFee: parseLocaleNumber(pick(record, 'Condomínio', 'Condominio')), propertyTax: parseLocaleNumber(pick(record, 'IPTU')),

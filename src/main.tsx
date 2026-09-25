@@ -11,6 +11,10 @@ import './styles/content.css'
 import './styles/motion.css'
 import './styles/admin.css'
 
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js') })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <><AnalyticsProvider /><App /></>

@@ -14,6 +14,7 @@ Campos principais:
 - `Descrição`.
 - `Foto principal`: uma URL pública de imagem.
 - `Fotos`: várias URLs separadas por ` | `.
+- `Vídeo`: URL pública direta de um vídeo `.mp4` ou `.webm`.
 - `Corretor`, `CRECI`, `WhatsApp`.
 - `Status`: somente `Ativo` entra no site.
 - `Destaque`: `Sim` coloca o imóvel na frente da seleção da homepage.

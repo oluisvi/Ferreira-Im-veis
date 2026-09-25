@@ -10,6 +10,31 @@ function Fact({ label, value }: { label: string; value: string | number | null }
   return <div className="property-detail__fact"><span>{label}</span><strong>{value}</strong></div>
 }
 
+function PropertyVideo({ src, title }: { src: string; title: string }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.35 })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    if (isVisible) {
+      void element.play().catch(() => undefined)
+    } else {
+      element.pause()
+    }
+  }, [isVisible])
+
+  return <section className="property-detail__video" aria-label={`Vídeo de ${title}`}><video ref={ref} src={src} muted playsInline loop controls preload="metadata" poster={undefined} aria-label={`Vídeo de ${title}`} /></section>
+}
+
 export function PropertyDetailPage({ code }: { code: string }) {
   const { properties, loading, source } = useProperties()
   const property = useMemo(() => properties.find((item) => item.code.toLowerCase() === code.toLowerCase()), [properties, code])
@@ -50,6 +75,7 @@ export function PropertyDetailPage({ code }: { code: string }) {
           </div>
           {photos.length > 1 && <div className="property-detail__thumbs" aria-label={`${photos.length} fotos do imóvel`}>{photos.map((photo, index) => <button type="button" className={index === imageIndex ? 'is-active' : ''} onClick={() => selectImage(index)} key={`${photo}-${index}`} aria-label={`Ver foto ${index + 1} de ${photos.length}`}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
         </section>
+        {property.video && <PropertyVideo src={property.video} title={property.title} />}
         <section className="property-detail__intro">
           <div><span className="section-kicker">{property.type} · {property.purpose}</span><h1>{property.title}</h1><p>⌖ {getPropertyLocation(property)}</p></div>
           <div className="property-detail__price"><span>Valor</span><strong>{formatCurrency(property.price)}</strong></div>

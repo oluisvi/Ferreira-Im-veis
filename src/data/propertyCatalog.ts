@@ -19,6 +19,7 @@ export type Property = {
   description: string
   mainImage: string
   photos: string[]
+  video: string
   broker: string
   creci: string
   whatsapp: string
@@ -183,7 +184,7 @@ function normalizeFallbackProperty(record: CsvRecord): Property | null {
     builtArea: parseLocaleNumber(pick(record, 'Área construída', 'AreaConstruida')),
     lotArea: parseLocaleNumber(pick(record, 'Área terreno', 'AreaTerreno')),
     description: pick(record, 'Descrição', 'Descricao'),
-    mainImage,
+    mainImage, video: pick(record, 'Vídeo', 'Video', 'Tour em vídeo', 'Tour em video'),
     photos: uniquePhotos,
     broker: pick(record, 'Corretor') || 'Ferreira',
     creci: pick(record, 'CRECI') || CRECI,

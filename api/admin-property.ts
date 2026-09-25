@@ -1,8 +1,9 @@
 import { requireAdmin } from '../server/admin-auth.ts'
+import { del } from '@vercel/blob'
 
 export default async function handler(request: any, response: any) {
-  if (request.method !== 'POST') {
-    response.setHeader('Allow', 'POST')
+  if (request.method !== 'POST' && request.method !== 'DELETE') {
+    response.setHeader('Allow', 'POST, DELETE')
     return response.status(405).json({ error: 'Método não permitido.' })
   }
 
@@ -14,11 +15,27 @@ export default async function handler(request: any, response: any) {
   }
 
   try {
+    const payload = request.body || {}
+    const media = Array.isArray(payload.media)
+      ? payload.media.filter((value: unknown): value is string => {
+          if (typeof value !== 'string' || !value.startsWith('https://')) return false
+          try { return new URL(value).hostname.endsWith('blob.vercel-storage.com') }
+          catch { return false }
+        })
+      : []
+
+    if (request.method === 'DELETE') {
+      if (!payload.code || !payload.confirmation || payload.confirmation !== payload.code) {
+        return response.status(400).json({ error: 'Digite o código do imóvel para confirmar a exclusão.' })
+      }
+      if (media.length) await del(media)
+    }
+
     const upstream = await fetch(scriptUrl, {
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(request.body || {}),
+      body: JSON.stringify(request.method === 'DELETE' ? { ...payload, action: 'delete_property' } : payload),
     })
 
     if (!upstream.ok) throw new Error(`Google Apps Script respondeu ${upstream.status}`)
