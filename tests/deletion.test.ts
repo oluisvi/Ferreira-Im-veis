@@ -4,9 +4,15 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import handler from '../api/admin-property'
 import propertiesHandler from '../api/properties.ts'
-import { del } from '@vercel/blob'
+import { BlobAccessError, BlobNotFoundError, del } from '@vercel/blob'
 import { requireAdmin } from '../server/admin-auth'
-vi.mock('@vercel/blob', () => ({ del: vi.fn() }))
+vi.mock('@vercel/blob', () => ({
+  del: vi.fn(),
+  BlobAccessError: class BlobAccessError extends Error {},
+  BlobNotFoundError: class BlobNotFoundError extends Error {},
+  BlobServiceRateLimited: class BlobServiceRateLimited extends Error {},
+  BlobStoreNotFoundError: class BlobStoreNotFoundError extends Error {},
+}))
 vi.mock('../server/admin-auth.ts', () => ({ requireAdmin: vi.fn(() => true) }))
 
 const photo = 'https://store.public.blob.vercel-storage.com/photo.jpg'
@@ -137,6 +143,19 @@ describe('exclusão integrada API + Apps Script', () => {
     expect((await remove()).statusCode).toBe(502)
     expect(sheets[0].data.length).toBe(3)
     expect(del).toHaveBeenCalled()
+  })
+  it('explica falta de acesso ao armazenamento e mantém os dados para nova tentativa', async () => {
+    vi.mocked(del).mockRejectedValue(new BlobAccessError())
+    const result = await remove()
+    expect(result.statusCode).toBe(502)
+    expect(result.body.error).toContain('Storage > Blob > Projects')
+    expect(sheets[0].data.length).toBe(3)
+  })
+  it('conclui a exclusão após tentativa anterior já ter removido as mídias', async () => {
+    vi.mocked(del).mockRejectedValue(new BlobNotFoundError())
+    const result = await remove()
+    expect(result.statusCode).toBe(200)
+    expect(sheets[0].data.length).toBe(2)
   })
   it('recusa commit se mídias forem alteradas diretamente na planilha', () => {
     const prepared = script({ action: 'prepare_delete_property', code: 'a' })

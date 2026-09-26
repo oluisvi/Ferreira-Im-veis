@@ -1,5 +1,14 @@
 ﻿import { requireAdmin } from '../server/admin-auth.ts'
-import { del } from '@vercel/blob'
+import { BlobAccessError, BlobNotFoundError, BlobServiceRateLimited, BlobStoreNotFoundError, del } from '@vercel/blob'
+
+function mediaFailureHint(error: unknown): string {
+  if (error instanceof BlobAccessError || error instanceof BlobStoreNotFoundError
+    || (error instanceof Error && (error.message.includes('No blob credentials found') || error.message.includes('OIDC is enabled')))) {
+    return 'O projeto não tem acesso ao armazenamento Blob dessas fotos. Em Storage > Blob > Projects, conecte o projeto ao armazenamento correto para Production.'
+  }
+  if (error instanceof BlobServiceRateLimited) return 'O Blob limitou as operações. Aguarde um minuto e tente novamente.'
+  return 'Verifique o erro da função nos Logs da Vercel antes de tentar novamente.'
+}
 
 export function isBlobUrl(value: unknown): value is string {
   if (typeof value !== 'string') return false
@@ -61,14 +70,25 @@ export default async function handler(request: any, response: any) {
     // Falhas mantêm as linhas e URLs na planilha para permitir uma nova tentativa.
     // O SDK usa o token legado ou o OIDC da função. Em OIDC, o storeId é
     // necessário e já está presente no domínio da URL de cada arquivo.
-    const cleanup = await Promise.allSettled(media.map((url) => del(url, {
-      storeId: new URL(url).hostname.split('.')[0],
-    })))
-    const failed = cleanup.filter((item) => item.status === 'rejected').length
-    if (failed) return response.status(502).json({
+    const cleanup = await Promise.allSettled(media.map(async (url) => {
+      try {
+        await del(url, { storeId: new URL(url).hostname.split('.')[0] })
+      } catch (error) {
+        // Uma tentativa anterior pode já ter removido este arquivo.
+        if (!(error instanceof BlobNotFoundError)) throw error
+      }
+    }))
+    const failures = cleanup.filter((item): item is PromiseRejectedResult => item.status === 'rejected')
+    if (failures.length) {
+      console.error('Falha ao excluir mídias no Blob:', failures.map(({ reason }) => ({
+        type: reason instanceof Error ? reason.constructor.name : 'UnknownError',
+        message: reason instanceof Error ? reason.message : String(reason),
+      })))
+      return response.status(502).json({
       ok: false, code: 'MEDIA_CLEANUP_PENDING',
-      error: `${failed} mídia(s) não puderam ser excluídas. O registro foi mantido para você tentar novamente.`,
-    })
+        error: `${failures.length} mídia(s) não puderam ser excluídas. O registro foi mantido. ${mediaFailureHint(failures[0].reason)}`,
+      })
+    }
     const result = await callScript({ action: 'commit_delete_property', code, token: prepared.token, media: prepared.media })
     if (result.protocol !== 2 || result.exists !== false || result.deleted !== code.toLowerCase()) {
       throw new Error('A planilha não confirmou a exclusão completa. Tente novamente.')
