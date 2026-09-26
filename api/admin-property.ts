@@ -58,11 +58,12 @@ export default async function handler(request: any, response: any) {
       throw new Error('Atualize e publique uma nova versão do Apps Script antes de excluir imóveis.')
     }
     const media: string[] = [...new Set<string>(prepared.media.filter(isBlobUrl))]
-    if (media.length && !process.env.BLOB_READ_WRITE_TOKEN) {
-      throw new Error('Configure BLOB_READ_WRITE_TOKEN. A exclusão está pendente e pode ser tentada novamente.')
-    }
     // Falhas mantêm as linhas e URLs na planilha para permitir uma nova tentativa.
-    const cleanup = await Promise.allSettled(media.map((url) => del(url)))
+    // O SDK usa o token legado ou o OIDC da função. Em OIDC, o storeId é
+    // necessário e já está presente no domínio da URL de cada arquivo.
+    const cleanup = await Promise.allSettled(media.map((url) => del(url, {
+      storeId: new URL(url).hostname.split('.')[0],
+    })))
     const failed = cleanup.filter((item) => item.status === 'rejected').length
     if (failed) return response.status(502).json({
       ok: false, code: 'MEDIA_CLEANUP_PENDING',
