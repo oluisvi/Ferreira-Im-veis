@@ -18,6 +18,16 @@ export function isBlobUrl(value: unknown): value is string {
   } catch { return false }
 }
 
+export function deletionStoreId(url: string, configuredStoreId = process.env.BLOB_STORE_ID): string {
+  const urlStoreId = new URL(url).hostname.split('.')[0]
+  if (!configuredStoreId) return urlStoreId
+  const storeId = configuredStoreId.replace(/^store_/i, '')
+  if (storeId.toLowerCase() !== urlStoreId) {
+    throw new Error('As fotos pertencem a outro armazenamento Blob. Confira BLOB_STORE_ID em Production.')
+  }
+  return storeId
+}
+
 export default async function handler(request: any, response: any) {
   response.setHeader('Cache-Control', 'no-store')
   if (request.method !== 'POST' && request.method !== 'DELETE') {
@@ -67,12 +77,13 @@ export default async function handler(request: any, response: any) {
       throw new Error('Atualize e publique uma nova versão do Apps Script antes de excluir imóveis.')
     }
     const media: string[] = [...new Set<string>(prepared.media.filter(isBlobUrl))]
+    const mediaStoreIds = media.map((url) => deletionStoreId(url))
     // Falhas mantêm as linhas e URLs na planilha para permitir uma nova tentativa.
-    // O SDK usa o token legado ou o OIDC da função. Em OIDC, o storeId é
-    // necessário e já está presente no domínio da URL de cada arquivo.
-    const cleanup = await Promise.allSettled(media.map(async (url) => {
+    // O domínio é insensível a maiúsculas, mas o ID do Blob pode conter maiúsculas.
+    // Usar o ID da conexão OIDC preserva a grafia exigida pela API do Blob.
+    const cleanup = await Promise.allSettled(media.map(async (url, index) => {
       try {
-        await del(url, { storeId: new URL(url).hostname.split('.')[0] })
+        await del(url, { storeId: mediaStoreIds[index] })
       } catch (error) {
         // Uma tentativa anterior pode já ter removido este arquivo.
         if (!(error instanceof BlobNotFoundError)) throw error
