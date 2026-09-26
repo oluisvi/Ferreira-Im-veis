@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import fs from 'node:fs'
 import vm from 'node:vm'
 import handler from '../api/admin-property'
-import propertiesHandler from '../api/properties.js'
+import propertiesHandler from '../api/properties.ts'
 import { del } from '@vercel/blob'
 import { requireAdmin } from '../server/admin-auth'
 vi.mock('@vercel/blob', () => ({ del: vi.fn() }))

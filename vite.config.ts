@@ -9,7 +9,7 @@ import adminClarityHandler from './api/admin-clarity.ts'
 import uploadImageHandler from './api/upload-image.ts'
 import uploadTokenHandler from './api/upload-token.ts'
 import whatsappClickHandler from './api/whatsapp-click.ts'
-import propertiesHandler from './api/properties.js'
+import propertiesHandler from './api/properties.ts'
 
 const apiHandlers: Record<string, (request: any, response: any) => Promise<any>> = {
   '/api/admin-login': adminLoginHandler,

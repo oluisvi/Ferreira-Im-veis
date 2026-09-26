@@ -1,5 +1,7 @@
 ﻿# Correção da exclusão de imóveis
 
+**Atualização para erro 500 em /api/properties?admin=1:** a rota agora usa `api/properties.ts`, de modo que a Vercel compile a função junto com a autenticação em TypeScript. A leitura da sessão também ficou dentro do tratamento de erros. Publique este ZIP mais recente na Vercel. A rota `/api/properties?admin=1` deve responder JSON (HTTP 200 com uma sessão válida ou 401 sem sessão), e não `FUNCTION_INVOCATION_FAILED`. Se ainda ocorrer 500, consulte o log de execução da função para identificar o erro de inicialização exato. A publicação do Apps Script continua necessária caso ainda não tenha sido feita.
+
 O projeto foi corrigido localmente. Nenhuma alteração foi publicada na sua Vercel nem executada na sua planilha real.
 
 ## Aplicação — atualizar os dois lados

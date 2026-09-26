@@ -153,7 +153,7 @@ git diff --check
 git status
 ```
 
-Não crie simultaneamente `api/properties.js` e `api/properties.ts`: isso gera conflito de rota na Vercel. A implementação atual está em `api/properties.js`.
+Não crie simultaneamente `api/properties.js` e `api/properties.ts`: isso gera conflito de rota na Vercel. A implementação atual está em `api/properties.ts`.
 
 ## Troubleshooting
 
