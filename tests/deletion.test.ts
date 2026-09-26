@@ -53,6 +53,7 @@ beforeEach(() => {
   vi.mocked(del).mockResolvedValue(undefined)
   process.env.PROPERTIES_SCRIPT_URL = 'https://script.example/exec'
   process.env.BLOB_READ_WRITE_TOKEN = 'test-token'
+  delete process.env.BLOB_STORE_ID
   sheets = [
     new Sheet('Imoveis', [[' Código ', 'Título', 'Status', 'Foto principal', 'Fotos', 'Vídeo'], [' A ', 'Casa', 'Ativo', photo, `${photo} | ${shared}`, video], ['B', 'Outra', 'Ativo', shared, '', '']]),
     new Sheet('ferreira-imoveis-template.csv', [['ID', 'imagem'], ['a', photo]]),
@@ -133,9 +134,18 @@ describe('exclusão integrada API + Apps Script', () => {
   })
   it('aceita a autenticação OIDC sem BLOB_READ_WRITE_TOKEN', async () => {
     delete process.env.BLOB_READ_WRITE_TOKEN
+    process.env.BLOB_STORE_ID = 'store_StOrE'
     expect((await remove()).statusCode).toBe(200)
-    expect(vi.mocked(del).mock.calls[0][1]).toMatchObject({ storeId: 'store' })
+    expect(vi.mocked(del).mock.calls[0][1]).toMatchObject({ storeId: 'StOrE' })
     expect(sheets[0].data.length).toBe(2)
+  })
+  it('não envia fotos de outro armazenamento para a conexão OIDC', async () => {
+    process.env.BLOB_STORE_ID = 'store_outro'
+    const result = await remove()
+    expect(result.statusCode).toBe(502)
+    expect(result.body.error).toContain('BLOB_STORE_ID')
+    expect(del).not.toHaveBeenCalled()
+    expect(sheets[0].data.length).toBe(3)
   })
   it('mantém as linhas se o SDK não encontrar credenciais Blob', async () => {
     delete process.env.BLOB_READ_WRITE_TOKEN
