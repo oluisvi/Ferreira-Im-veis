@@ -43,6 +43,17 @@ export default async function handler(request: any, response: any) {
       throw new Error(result?.error || 'Google Apps Script não confirmou a operação.')
     }
 
+    if (request.method === 'DELETE') {
+      const checkUrl = new URL(scriptUrl)
+      checkUrl.searchParams.set('action', 'property-check')
+      checkUrl.searchParams.set('code', String(payload.code))
+      const checkResponse = await fetch(checkUrl, { redirect: 'follow' })
+      const check = await checkResponse.json().catch(() => null)
+      if (!checkResponse.ok || check?.ok !== true || check.exists === true) {
+        throw new Error('A planilha ainda encontrou o imóvel depois da exclusão.')
+      }
+    }
+
     if (request.method === 'DELETE' && media.length) {
       const cleanup = await Promise.allSettled(media.map((url: string) => del(url)))
       const failed = cleanup.filter((item) => item.status === 'rejected').length

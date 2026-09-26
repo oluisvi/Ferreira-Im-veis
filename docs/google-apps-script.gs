@@ -93,6 +93,12 @@ function updateProperty(payload) {
 function doGet(event) {
   const action = String((event.parameter && event.parameter.action) || '')
 
+  if (action === 'property-check') {
+    const sheet = getPropertySheet()
+    const found = findPropertyRows(sheet, event.parameter.code)
+    return jsonResponse({ ok: true, exists: found.rows.length > 0, matches: found.rows.length })
+  }
+
   if (action === 'whatsapp-report') {
     const requestedDays = Number((event.parameter && event.parameter.days) || 3)
     const days = [1, 2, 3].indexOf(requestedDays) >= 0 ? requestedDays : 3

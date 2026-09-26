@@ -149,6 +149,9 @@
 .admin-manage-placeholder p { margin:.6rem 0 0; font-size:.75rem; }
 .admin-manage-grid { display:grid; gap:.75rem; margin-top:2rem; }
 .admin-manage-grid article { display:grid; grid-template-columns:5rem minmax(0,1fr) auto; align-items:center; gap:1rem; padding:.75rem; border:1px solid rgba(23,22,20,.12); background:#fffdfa; }
+.admin-manage-grid article.is-delete-pending { border-color:rgba(155,57,48,.45); background:#fff5f2; }
+.admin-manage-card__info strong { display:block; }
+.admin-manage-card__info small { display:block; }
 .admin-manage-grid img { width:5rem; height:4rem; object-fit:cover; background:#e8e1d6; }
 .admin-manage-grid span,.admin-manage-grid small { display:block; color:#877d72; font-size:.62rem; }
 .admin-manage-grid strong { display:block; margin:.25rem 0; font-family:var(--serif); font-size:1.2rem; font-weight:400; }
