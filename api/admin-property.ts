@@ -49,7 +49,10 @@ export default async function handler(request: any, response: any) {
       checkUrl.searchParams.set('code', String(payload.code))
       const checkResponse = await fetch(checkUrl, { redirect: 'follow' })
       const check = await checkResponse.json().catch(() => null)
-      if (!checkResponse.ok || check?.ok !== true || check.exists === true) {
+      if (!checkResponse.ok || check?.ok !== true || typeof check.exists !== 'boolean') {
+        throw new Error('O Apps Script publicado está desatualizado. Publique a versão nova antes de excluir imóveis.')
+      }
+      if (check.exists) {
         throw new Error('A planilha ainda encontrou o imóvel depois da exclusão.')
       }
     }
