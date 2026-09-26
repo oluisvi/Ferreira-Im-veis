@@ -73,7 +73,8 @@ describe('exclusão integrada API + Apps Script', () => {
     const res = await remove({ media: ['https://store.public.blob.vercel-storage.com/forged.jpg'] })
     expect(res.statusCode).toBe(200)
     expect(res.body).toMatchObject({ ok: true, exists: false, deletedRows: 2, deletedEvents: 1, mediaDeleted: 2, sharedMedia: 1 })
-    expect(vi.mocked(del).mock.calls.flat()).toEqual([photo, video])
+    expect(vi.mocked(del).mock.calls.map(([url]) => url)).toEqual([photo, video])
+    expect(vi.mocked(del).mock.calls.map(([, options]) => options?.storeId)).toEqual(['store', 'store'])
     expect(sheets[0].data.length).toBe(2)
     expect(sheets[1].data.length).toBe(1)
     expect(sheets[2].data).toEqual([['Timestamp', 'PropertyId'], ['date', 'B']])
@@ -124,11 +125,18 @@ describe('exclusão integrada API + Apps Script', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(del).not.toHaveBeenCalled()
   })
-  it('não apaga linhas sem token do Blob', async () => {
+  it('aceita a autenticação OIDC sem BLOB_READ_WRITE_TOKEN', async () => {
     delete process.env.BLOB_READ_WRITE_TOKEN
+    expect((await remove()).statusCode).toBe(200)
+    expect(vi.mocked(del).mock.calls[0][1]).toMatchObject({ storeId: 'store' })
+    expect(sheets[0].data.length).toBe(2)
+  })
+  it('mantém as linhas se o SDK não encontrar credenciais Blob', async () => {
+    delete process.env.BLOB_READ_WRITE_TOKEN
+    vi.mocked(del).mockRejectedValue(new Error('No blob credentials found'))
     expect((await remove()).statusCode).toBe(502)
     expect(sheets[0].data.length).toBe(3)
-    expect(del).not.toHaveBeenCalled()
+    expect(del).toHaveBeenCalled()
   })
   it('recusa commit se mídias forem alteradas diretamente na planilha', () => {
     const prepared = script({ action: 'prepare_delete_property', code: 'a' })

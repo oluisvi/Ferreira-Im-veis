@@ -10,7 +10,7 @@ O projeto foi corrigido localmente. Nenhuma alteração foi publicada na sua Ver
 2. Substitua o código antigo pelo conteúdo completo de `docs/google-apps-script.gs` deste pacote. O arquivo separado `google-apps-script-corrigido.gs` contém o mesmo código. Substitua, não acrescente ao script antigo.
 3. Salve e publique uma **nova versão da implantação existente** em **Implantar > Gerenciar implantações > Editar > Nova versão > Implantar**. Apenas salvar o editor não atualiza a versão usada pelo site. Preserve o acesso de aplicativo da Web necessário ao servidor e a execução pela conta com acesso à planilha.
 4. Confirme que a URL terminada em `/exec` é a mesma configurada na Vercel em `PROPERTIES_SCRIPT_URL`. Acesse essa URL com `?action=delete-capabilities`: a resposta deve incluir `"ok":true,"protocol":2`.
-5. Na Vercel, confira `BLOB_READ_WRITE_TOKEN`, usando o token do mesmo armazenamento que recebe os uploads. Mantenha também as configurações existentes de login do admin. Não coloque esse token em variável `VITE_`.
+5. Na Vercel, confirme que o armazenamento Blob das imagens está conectado a este projeto. Conexões OIDC atuais não mostram `BLOB_READ_WRITE_TOKEN`: o SDK recebe a autenticação automaticamente. Se a conexão for antiga, confira `BLOB_READ_WRITE_TOKEN` em Production. Mantenha as configurações de login do admin.
 6. Publique o projeto corrigido na Vercel. Atualize Apps Script e site na mesma manutenção: o site novo exige o protocolo novo, e o script novo recusa a exclusão antiga.
 7. Em `/admin`, crie um imóvel de teste com duas fotos e um vídeo, exclua-o e recarregue o painel e o catálogo. Confira a ausência das linhas nas abas e dos arquivos no armazenamento Blob.
 
@@ -31,7 +31,7 @@ O projeto foi corrigido localmente. Nenhuma alteração foi publicada na sua Ver
 
 ## Limites e recuperação
 
-- Google Sheets e Blob são serviços separados; não existe uma transação única entre eles. Em uma falha parcial, algumas mídias podem já ter sido apagadas, enquanto o registro continua na planilha. Corrija token/permissões/conexão e use **Excluir** novamente para concluir. Não remova as linhas manualmente durante essa recuperação, pois elas guardam as referências necessárias.
+- Google Sheets e Blob são serviços separados; não existe uma transação única entre eles. Em uma falha parcial, algumas mídias podem já ter sido apagadas, enquanto o registro continua na planilha. Corrija a conexão ou a permissão do Blob e use **Excluir** novamente para concluir. Não remova as linhas manualmente durante essa recuperação, pois elas guardam as referências necessárias.
 - Fotos externas (Google Drive, YouTube, outros sites) têm seus links removidos da planilha, mas o Vercel Blob não tem acesso para apagar os arquivos nesses provedores. O painel informa essa situação.
 - Arquivos antigos que já ficaram órfãos, sem URL em nenhuma linha ou histórico, não podem ser associados com segurança a um imóvel neste projeto: os uploads antigos usam nomes de arquivo, sem um identificador do imóvel. Esta correção não apaga indiscriminadamente o armazenamento e não recupera referências que já foram perdidas.
 - Faça a exclusão pelo painel. Alterações manuais nas células não participam do bloqueio do Apps Script; se as mídias mudarem durante a operação, a confirmação é recusada e pede nova tentativa.
