@@ -288,14 +288,8 @@ export async function loadProperties(): Promise<CatalogResponse> {
     const data: unknown = await response.json()
     if (!isCatalogResponse(data)) throw new Error('Resposta do catálogo inválida')
 
-    // Se houver pelo menos um imóvel real vindo do Sheets, o site usa
-    // exclusivamente esse catálogo e não mistura imóveis demonstrativos.
-    if (data.properties.length > 0) {
-      return { ...data, source: 'google-sheets' }
-    }
-
-    // Sheets conectado, porém vazio: mantém a interface preenchida com mocks.
-    return { source: 'fallback', properties: fallbackProperties }
+    // Uma planilha vazia deve continuar vazia após a exclusão do último imóvel.
+    return { ...data, source: 'google-sheets' }
   } catch {
     // Sheets/API indisponível ou ainda não configurado: usa somente os mocks.
     return { source: 'fallback', properties: fallbackProperties }

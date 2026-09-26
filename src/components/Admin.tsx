@@ -152,6 +152,9 @@ export function Admin() {
   const manageLoaded = useRef(false)
   const [editingCode, setEditingCode] = useState('')
   const [pendingDelete, setPendingDelete] = useState<Property | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const deleteInFlight = useRef(false)
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([])
 
   const [reportDays, setReportDays] = useState(3)
   const [reportStatus, setReportStatus] = useState<ReportStatus>('idle')
@@ -164,7 +167,7 @@ export function Admin() {
     if (authState !== 'authenticated' || view !== 'manage' || manageStatus === 'loading' || manageLoaded.current) return
     manageLoaded.current = true
     setManageStatus('loading')
-    fetch('/api/properties', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+    fetch('/api/properties?admin=1', { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(async (response) => {
         const body = await response.json().catch(() => ({}))
         if (!response.ok) throw new Error(body.error || 'Não foi possível carregar os imóveis.')
@@ -249,7 +252,7 @@ export function Admin() {
       const response = await fetch('/api/admin-property', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, imagem: imageUrl, imagens: uploadedImages.join(' | ') || imageUrl, video: videoUrl, id: editingCode || crypto.randomUUID(), action: editingCode ? 'update_property' : 'create_property' }),
+        body: JSON.stringify({ ...values, imagem: imageUrl, imagens: [...new Set([...existingPhotos, ...uploadedImages, imageUrl].filter(Boolean))].join(' | '), video: videoUrl, midias: uploaded.map(({ url }) => url).join(' | '), id: editingCode || crypto.randomUUID(), action: editingCode ? 'update_property' : 'create_property' }),
       })
       const body = await response.json().catch(() => ({}))
       if (!response.ok) {
@@ -259,6 +262,8 @@ export function Admin() {
 
       setValues(initialValues)
       setEditingCode('')
+      setExistingPhotos([])
+      manageLoaded.current = false
       setMediaFiles([])
       setStatus('success')
       setSaveMessage('Imóvel enviado para a planilha com sucesso.')
@@ -302,6 +307,7 @@ export function Admin() {
 
   function startEditing(property: Property) {
     setValues({ ativo: 'sim', categoria: property.type || 'Casa', titulo: property.title, preco: property.price?.toString() || '', localizacao: [property.neighborhood, property.city].filter(Boolean).join(', '), area: property.area?.toString() || '', quartos: property.bedrooms?.toString() || '', banheiros: property.bathrooms?.toString() || '', vagas: property.parkingSpaces?.toString() || '', descricao: property.description, imagem: property.mainImage, video: property.video || '', link: '' })
+    setExistingPhotos(property.photos)
     setEditingCode(property.code)
     setView('properties')
     setSaveMessage(`Editando ${property.code}. O salvamento completo será enviado pelo mesmo cadastro.`)
@@ -312,16 +318,24 @@ export function Admin() {
   }
 
   async function confirmDelete() {
-    if (!pendingDelete) return
+    if (!pendingDelete || deleteInFlight.current) return
     const property = pendingDelete
-    const response = await fetch('/api/admin-property', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: property.code, confirmation: true, media: [...property.photos, property.video].filter(Boolean) }) })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) { window.alert(body.error || 'Não foi possível excluir o imóvel.'); return }
-    if (body.mediaCleanupErrors) {
-      window.alert(`O imóvel foi removido da planilha e do catálogo, mas ${body.mediaCleanupErrors} mídia(s) não puderam ser confirmadas na limpeza.`)
+    deleteInFlight.current = true
+    setDeleting(true)
+    try {
+      const response = await fetch('/api/admin-property', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: property.code, confirmation: true }) })
+      const body = await response.json().catch(() => ({}))
+      if (response.status === 401) setAuthState('anonymous')
+      if (!response.ok || body.ok !== true || body.exists !== false) throw new Error(body.error || 'A exclusão não foi confirmada. Tente novamente.')
+      setManageProperties((current) => current.filter((item) => item.code.trim().toLowerCase() !== property.code.trim().toLowerCase()))
+      setPendingDelete(null)
+      if (body.externalMedia) window.alert('Imóvel excluído. Links externos foram retirados da planilha; os arquivos no provedor externo não são apagados pelo Vercel Blob.')
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Não foi possível concluir a exclusão. Tente novamente.')
+    } finally {
+      deleteInFlight.current = false
+      setDeleting(false)
     }
-    setManageProperties((current) => current.filter((item) => item.code !== property.code))
-    setPendingDelete(null)
   }
 
   if (authState === 'checking') {
@@ -370,7 +384,7 @@ export function Admin() {
               <div className="admin-header__row"><div><h1>O que você deseja fazer?</h1><p>Escolha uma ação para administrar o catálogo da Ferreira Imóveis.</p></div><div className="admin-header__badge"><i />Sessão protegida</div></div>
             </header>
             <div className="admin-home__actions">
-              <button type="button" onClick={() => { setEditingCode(''); setValues(initialValues); setView('properties') }}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
+              <button type="button" onClick={() => { setEditingCode(''); setExistingPhotos([]); setValues(initialValues); setView('properties') }}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
               <button type="button" onClick={() => setView('manage')}><span>02</span><strong>Editar imóvel</strong><small>Localizar um imóvel publicado e alterar seus dados.</small><b>→</b></button>
               <button type="button" onClick={() => setView('manage')}><span>03</span><strong>Excluir imóvel</strong><small>Gerenciar e remover definitivamente um imóvel vendido.</small><b>→</b></button>
             </div>
@@ -382,7 +396,7 @@ export function Admin() {
               <div className="admin-header__row"><div><h1>{view === 'manage' ? 'Gerenciar imóveis' : editingCode ? 'Editar imóvel' : 'Cadastro de imóveis'}</h1><p>{view === 'manage' ? 'Edite ou exclua definitivamente os imóveis publicados no catálogo.' : editingCode ? `Atualize os dados do imóvel ${editingCode} sem criar uma nova publicação.` : 'Adicione um novo imóvel ao catálogo conectado ao Google Sheets. A publicação segue o status definido abaixo.'}</p></div><div className="admin-header__badge"><i />Conectado ao fluxo de cadastro</div></div>
             </header>
 
-            {view === 'manage' ? <div className="admin-manage-grid">{manageStatus === 'loading' && <p>Carregando imóveis publicados…</p>}{manageStatus === 'error' && <p>Não foi possível carregar os imóveis agora.</p>}{manageStatus !== 'loading' && manageProperties.map((property) => { const isPendingDelete = pendingDelete?.code === property.code; return <article key={property.code} className={isPendingDelete ? 'is-delete-pending' : ''}><img src={property.mainImage} alt="" /><div className="admin-manage-card__info">{isPendingDelete ? <><strong>Excluir imóvel definitivamente?</strong><small>“{property.title}” e suas mídias serão removidos.</small></> : <><span>{property.code} · {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Preço sob consulta'}</small></>}</div><div className="admin-manage-card__actions">{isPendingDelete ? <><button type="button" onClick={() => setPendingDelete(null)}>Cancelar</button><button type="button" className="is-danger" onClick={() => void confirmDelete()}>Sim, excluir</button></> : <><button type="button" onClick={() => startEditing(property)}>Editar</button><button type="button" className="is-danger" onClick={() => void deleteProperty(property)}>Excluir</button></>}</div></article> })}</div> : <form className="admin-form" onSubmit={handleSubmit}>
+            {view === 'manage' ? <div className="admin-manage-grid">{manageStatus === 'loading' && <p>Carregando imóveis publicados…</p>}{manageStatus === 'error' && <p>Não foi possível carregar os imóveis agora.</p>}{manageStatus !== 'loading' && manageProperties.map((property) => { const isPendingDelete = pendingDelete?.code === property.code; return <article key={property.code} className={isPendingDelete ? 'is-delete-pending' : ''}><img src={property.mainImage} alt="" /><div className="admin-manage-card__info">{isPendingDelete ? <><strong>Excluir imóvel definitivamente?</strong><small>“{property.title}” e suas mídias serão removidos.</small></> : <><span>{property.code} · {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Preço sob consulta'}</small></>}</div><div className="admin-manage-card__actions">{isPendingDelete ? <><button type="button" disabled={deleting} onClick={() => setPendingDelete(null)}>Cancelar</button><button type="button" className="is-danger" disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo…' : 'Sim, excluir'}</button></> : <><button type="button" disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type="button" className="is-danger" disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}</div></article> })}</div> : <form className="admin-form" onSubmit={handleSubmit}>
               <label>Status<select value={values.ativo} onChange={(event) => update('ativo', event.target.value)}><option value="sim">Ativo no site</option><option value="não">Oculto</option></select></label>
               <label>Categoria<select value={values.categoria} onChange={(event) => update('categoria', event.target.value)}><option>Casa</option><option>Apartamento</option><option>Refúgio</option></select></label>
               <label>Título<input value={values.titulo} onChange={(event) => update('titulo', event.target.value)} required /></label>

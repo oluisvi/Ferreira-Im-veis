@@ -111,9 +111,8 @@ export async function getProperties() {
       isConcept: false as const,
     })).filter((item) => item.title && item.image)
 
-    // Havendo qualquer imóvel real no Google Sheets, usa somente o catálogo da nuvem.
-    // O CSV local de docs/google-sheets entra apenas quando a API responde vazia.
-    return properties.length > 0 ? properties : fallbackListings
+    // Não repovoar o catálogo com exemplos após excluir o último imóvel.
+    return properties
   } catch (error) {
     console.warn('Could not load properties from Google Sheets. Using docs/google-sheets fallback.', error)
     return fallbackListings

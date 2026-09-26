@@ -1,3 +1,4 @@
+import { requireAdmin } from '../server/admin-auth.ts'
 const ACTIVE_STATUS = new Set(['ativo', 'active'])
 
 function normalizeKey(value = '') {
@@ -67,16 +68,16 @@ function pick(record, ...keys) {
   return ''
 }
 
-function normalizeProperty(record) {
-  const photos = splitList(pick(record, 'Fotos', 'Galeria')).map(normalizeImageUrl)
-  const mainImage = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa')) || photos[0] || ''
+function normalizeProperty(record, includeInactive = false) {
+  const photos = splitList(pick(record, 'Fotos', 'Galeria', 'imagens')).map(normalizeImageUrl)
+  const mainImage = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa', 'imagem')) || photos[0] || ''
   const code = pick(record, 'Código', 'Codigo', 'Code', 'ID', 'Referência', 'Referencia')
   const title = pick(record, 'Título', 'Titulo', 'Nome')
-  const status = pick(record, 'Status')
-  if (!code || !title || !ACTIVE_STATUS.has(normalizeKey(status))) return null
+  const status = pick(record, 'Status') || (normalizeKey(pick(record, 'ativo')) === 'nao' ? 'Oculto' : 'Ativo')
+  if (!code || !title || (!includeInactive && !ACTIVE_STATUS.has(normalizeKey(status)))) return null
   const uniquePhotos = [...new Set([mainImage, ...photos].filter(Boolean))]
   return {
-    code, title, type: pick(record, 'Tipo'), purpose: pick(record, 'Finalidade'), city: pick(record, 'Cidade'), neighborhood: pick(record, 'Bairro'),
+    code, title, type: pick(record, 'Tipo', 'categoria'), purpose: pick(record, 'Finalidade'), city: pick(record, 'Cidade', 'localizacao'), neighborhood: pick(record, 'Bairro'),
     address: pick(record, 'Endereço', 'Endereco'), price: parseLocaleNumber(pick(record, 'Preço', 'Preco', 'Valor')),
     bedrooms: parseInteger(pick(record, 'Quartos', 'Dormitórios', 'Dormitorios')), bathrooms: parseInteger(pick(record, 'Banheiros')),
     parkingSpaces: parseInteger(pick(record, 'Vagas', 'Garagens')), area: parseLocaleNumber(pick(record, 'Área', 'Area', 'Metragem')),
@@ -99,15 +100,32 @@ function getSheetUrl() {
 
 export default async function handler(request, response) {
   if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return response.status(405).json({ error: 'Método não permitido.' }) }
+  const admin = request.query?.admin === '1'
+  if (admin && !requireAdmin(request, response)) return
   const sheetUrl = getSheetUrl()
   if (!sheetUrl) return response.status(503).json({ error: 'Catálogo ainda não conectado ao Google Sheets.', code: 'SHEET_NOT_CONFIGURED' })
   try {
-    const sheetResponse = await fetch(sheetUrl, { headers: { 'User-Agent': 'Ferreira-Corretor-Imoveis-Catalog/1.0' }, redirect: 'follow' })
-    if (!sheetResponse.ok) throw new Error(`Google Sheets respondeu ${sheetResponse.status}`)
-    const csv = await sheetResponse.text()
-    const rows = parseCsv(csv.replace(/^\uFEFF/, ''))
-    const [headers = [], ...dataRows] = rows
-    const properties = dataRows.map((row) => normalizeProperty(createRecord(headers, row))).filter(Boolean)
+    const scriptUrl = process.env.PROPERTIES_SCRIPT_URL || process.env.VITE_PROPERTIES_SCRIPT_URL
+    let records
+    if (scriptUrl) {
+      const url = new URL(scriptUrl)
+      url.searchParams.set('action', 'property-list')
+      const upstream = await fetch(url, { redirect: 'follow', cache: 'no-store' })
+      const body = await upstream.json()
+      if (!upstream.ok || body.ok !== true || body.protocol !== 2 || !Array.isArray(body.sheets)) throw new Error('Atualize o Apps Script para carregar a mesma fonte usada na exclusão.')
+      records = body.sheets.flatMap(({ headers, rows }) => rows.map((row) => createRecord(headers, row)))
+    } else {
+      const sheetResponse = await fetch(sheetUrl, { headers: { 'User-Agent': 'Ferreira-Corretor-Imoveis-Catalog/1.0' }, redirect: 'follow', cache: 'no-store' })
+      if (!sheetResponse.ok) throw new Error('Falha ao carregar Google Sheets')
+      const [headers = [], ...dataRows] = parseCsv((await sheetResponse.text()).replace(/^\uFEFF/, ''))
+      records = dataRows.map((row) => createRecord(headers, row))
+    }
+    const byCode = new Map()
+    records.map((record) => normalizeProperty(record, admin)).filter(Boolean).forEach((property) => {
+      const key = property.code.trim().toLowerCase()
+      if (!byCode.has(key)) byCode.set(key, property)
+    })
+    const properties = [...byCode.values()]
       // O catálogo muda pelo painel administrativo; não podemos servir imóveis
       // excluídos durante a janela do cache da CDN.
       response.setHeader('Cache-Control', 'no-store, max-age=0')
