@@ -134,7 +134,7 @@ export default async function handler(request: any, response: any) {
     const properties = [...byCode.values()]
       // O catálogo muda pelo painel administrativo; não podemos servir imóveis
       // excluídos durante a janela do cache da CDN.
-      response.setHeader('Cache-Control', 'no-store, max-age=0')
+      response.setHeader('Cache-Control', admin ? 'no-store, max-age=0' : 'public, max-age=0, s-maxage=15, stale-while-revalidate=60')
     return response.status(200).json({ source: 'google-sheets', updatedAt: new Date().toISOString(), properties })
   } catch (error) {
     console.error('Falha ao carregar catálogo do Google Sheets:', error)

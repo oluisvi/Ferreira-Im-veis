@@ -291,17 +291,30 @@ function isCatalogResponse(value: unknown): value is CatalogResponse {
   return Array.isArray((value as Partial<CatalogResponse>).properties)
 }
 
-export async function loadProperties(): Promise<CatalogResponse> {
-  try {
-    const response = await fetch('/api/properties', { headers: { Accept: 'application/json' } })
-    if (!response.ok) throw new Error(`Catálogo respondeu ${response.status}`)
-    const data: unknown = await response.json()
-    if (!isCatalogResponse(data)) throw new Error('Resposta do catálogo inválida')
+const catalogCacheTtlMs = 15_000
+let cachedCatalog: { value: CatalogResponse; expiresAt: number } | null = null
+let catalogRequest: Promise<CatalogResponse> | null = null
 
-    // Uma planilha vazia deve continuar vazia após a exclusão do último imóvel.
-    return { ...data, source: 'google-sheets' }
-  } catch {
-    // Sheets/API indisponível ou ainda não configurado: usa somente os mocks.
-    return { source: 'fallback', properties: fallbackProperties }
-  }
+export function loadProperties(): Promise<CatalogResponse> {
+  if (cachedCatalog && cachedCatalog.expiresAt > Date.now()) return Promise.resolve(cachedCatalog.value)
+  if (catalogRequest) return catalogRequest
+
+  catalogRequest = (async () => {
+    try {
+      const response = await fetch('/api/properties', { headers: { Accept: 'application/json' } })
+      if (!response.ok) throw new Error('Catalog responded ' + response.status)
+      const data: unknown = await response.json()
+      if (!isCatalogResponse(data)) throw new Error('Invalid catalog response')
+
+      const result = { ...data, source: 'google-sheets' as const }
+      cachedCatalog = { value: result, expiresAt: Date.now() + catalogCacheTtlMs }
+      return result
+    } catch {
+      return { source: 'fallback', properties: fallbackProperties }
+    } finally {
+      catalogRequest = null
+    }
+  })()
+
+  return catalogRequest
 }

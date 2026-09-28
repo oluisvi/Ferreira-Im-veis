@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { type Property } from '../data/propertyCatalog'
 import { upload } from '@vercel/blob/client'
 
@@ -6,6 +6,8 @@ type AuthState = 'checking' | 'anonymous' | 'authenticated'
 type AdminView = 'home' | 'properties' | 'manage' | 'report'
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error'
 type ReportStatus = 'idle' | 'loading' | 'success' | 'error'
+type ManageStatus = 'idle' | 'loading' | 'refreshing' | 'error'
+type SaveProgress = { phase: 'uploading' | 'saving'; completed: number; total: number }
 type NotificationKind = 'success' | 'error' | 'info' | 'warning'
 type AdminNotification = { id: number; kind: NotificationKind; title: string; message: string }
 
@@ -153,6 +155,31 @@ function mediaSummary(files: File[]) {
   return [photos ? `${photos} foto${photos > 1 ? 's' : ''}` : '', videos ? `${videos} vídeo${videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')
 }
 
+
+const MANAGE_CACHE_KEY = 'ferreira-admin-property-list-v1'
+
+function readManageCache(): Property[] | null {
+  try {
+    const raw = window.sessionStorage.getItem(MANAGE_CACHE_KEY)
+    if (!raw) return null
+    const cached = JSON.parse(raw) as { savedAt?: number; properties?: Property[] }
+    if (!cached.savedAt || Date.now() - cached.savedAt > 30 * 60 * 1000 || !Array.isArray(cached.properties)) return null
+    return cached.properties
+  } catch { return null }
+}
+
+function writeManageCache(properties: Property[]) {
+  try { window.sessionStorage.setItem(MANAGE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), properties })) } catch { /* Optional cache. */ }
+}
+
+function parseAdminNumber(value: string): number | null {
+  const raw = value.trim().replace(/[^0-9,.-]/g, '')
+  if (!raw) return null
+  const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : /^-?\d{1,3}(\.\d{3})+$/.test(raw) ? raw.replace(/\./g, '') : raw
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function AdminToast({ notification, onDismiss }: { notification: AdminNotification | null; onDismiss: () => void }) {
   if (!notification) return null
   return <div className="admin-toast-region" aria-live={notification.kind === 'error' ? 'assertive' : 'polite'}>
@@ -176,8 +203,9 @@ export function Admin() {
   const [values, setValues] = useState(initialValues)
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [status, setStatus] = useState<SaveStatus>('idle')
+  const [saveProgress, setSaveProgress] = useState<SaveProgress | null>(null)
   const [manageProperties, setManageProperties] = useState<Property[]>([])
-  const [manageStatus, setManageStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [manageStatus, setManageStatus] = useState<ManageStatus>('idle')
   const [manageSearch, setManageSearch] = useState('')
   const [manageVisibility, setManageVisibility] = useState<'all' | 'active' | 'hidden'>('all')
   const [manageType, setManageType] = useState('')
@@ -204,27 +232,45 @@ export function Admin() {
     const timeout = window.setTimeout(() => setNotification((current) => current?.id === notification.id ? null : current), 6000)
     return () => window.clearTimeout(timeout)
   }, [notification])
-  const filteredManageProperties = [...manageProperties].reverse().filter((property) => {
+  const filteredManageProperties = useMemo(() => {
     const query = manageSearch.trim().toLocaleLowerCase('pt-BR')
-    const searchable = [property.code, property.title, property.city, property.neighborhood].join(' ').toLocaleLowerCase('pt-BR')
-    const isActive = ['ativo', 'active'].includes(property.status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
-    const matchesVisibility = manageVisibility === 'all' || (manageVisibility === 'active' ? isActive : !isActive)
-    return (!query || searchable.includes(query)) && matchesVisibility && (!manageType || property.type === manageType)
-  })
-  const manageTypes = [...new Set(manageProperties.map((property) => property.type).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+    return [...manageProperties].reverse().filter((property) => {
+      const searchable = [property.code, property.title, property.city, property.neighborhood].join(' ').toLocaleLowerCase('pt-BR')
+      const isActive = ['ativo', 'active'].includes(property.status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+      const matchesVisibility = manageVisibility === 'all' || (manageVisibility === 'active' ? isActive : !isActive)
+      return (!query || searchable.includes(query)) && matchesVisibility && (!manageType || property.type === manageType)
+    })
+  }, [manageProperties, manageSearch, manageVisibility, manageType])
+  const manageTypes = useMemo(() => [...new Set(manageProperties.map((property) => property.type).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [manageProperties])
 
   useEffect(() => {
-    if (authState !== 'authenticated' || view !== 'manage' || manageStatus === 'loading' || manageLoaded.current) return
+    if (authState !== 'authenticated' || view !== 'manage' || manageStatus === 'loading' || manageStatus === 'refreshing' || manageLoaded.current) return
     manageLoaded.current = true
-    setManageStatus('loading')
+    const cachedProperties = readManageCache()
+    if (cachedProperties) {
+      setManageProperties(cachedProperties)
+      setManageStatus('refreshing')
+    } else {
+      setManageStatus('loading')
+    }
     fetch('/api/properties?admin=1', { headers: { Accept: 'application/json' }, cache: 'no-store' })
       .then(async (response) => {
         const body = await response.json().catch(() => ({}))
-        if (!response.ok) throw new Error(body.error || 'Não foi possível carregar os imóveis.')
-        setManageProperties(Array.isArray(body.properties) ? body.properties : [])
+        if (!response.ok) throw new Error(body.error || 'N\u00e3o foi poss\u00edvel carregar os im\u00f3veis.')
+        const nextProperties = Array.isArray(body.properties) ? body.properties : []
+        setManageProperties(nextProperties)
+        writeManageCache(nextProperties)
         setManageStatus('idle')
       })
-      .catch(() => { manageLoaded.current = true; setManageStatus('error'); notify('error', 'N\u00e3o foi poss\u00edvel carregar a lista de im\u00f3veis.') })
+      .catch(() => {
+        if (cachedProperties) {
+          setManageStatus('idle')
+          notify('warning', 'Atualiza\u00e7\u00e3o indispon\u00edvel. Mostrando a \u00faltima lista salva nesta sess\u00e3o.')
+        } else {
+          setManageStatus('error')
+          notify('error', 'N\u00e3o foi poss\u00edvel carregar a lista de im\u00f3veis.')
+        }
+      })
   }, [authState, view, manageStatus])
 
   useEffect(() => {
@@ -280,6 +326,7 @@ export function Admin() {
   async function handleLogout() {
     try { await fetch('/api/admin-logout', { method: 'POST' }) } catch { /* local session still closes */ }
     setAuthState('anonymous')
+    try { window.sessionStorage.removeItem(MANAGE_CACHE_KEY) } catch { /* Optional cache. */ }
     setReportCache({})
     setView('home')
     manageLoaded.current = false
@@ -290,49 +337,86 @@ export function Admin() {
     event.preventDefault()
     const wasEditing = Boolean(editingCode)
     setStatus('saving')
+    setSaveProgress({ phase: mediaFiles.length ? 'uploading' : 'saving', completed: 0, total: mediaFiles.length })
 
     try {
       let imageUrl = values.imagem
       let videoUrl = values.video
-      const uploaded: { file: File; type: string; url: string }[] = []
-      for (let index = 0; index < mediaFiles.length; index += 3) {
-        const batch = await Promise.all(mediaFiles.slice(index, index + 3).map(async (file) => {
+      const uploadedByIndex: ({ file: File; type: string; url: string } | undefined)[] = new Array(mediaFiles.length)
+      let nextIndex = 0
+      let completedUploads = 0
+      let uploadError: unknown = null
+      const connection = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection
+      const slowConnection = connection?.saveData || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType || '')
+      const concurrency = slowConnection ? 2 : 4
+      const workers = Array.from({ length: Math.min(concurrency, mediaFiles.length) }, async () => {
+        while (nextIndex < mediaFiles.length && !uploadError) {
+          const index = nextIndex++
+          const file = mediaFiles[index]
           const type = getMediaType(file)!
-          const blob = await upload('imoveis/' + mediaPath(file), file, { access: 'public', contentType: type, handleUploadUrl: '/api/upload-token', multipart: true })
-          return { file, type, url: blob.url }
-        }))
-        uploaded.push(...batch)
-      }
+          try {
+            const blob = await upload('imoveis/' + mediaPath(file), file, { access: 'public', contentType: type, handleUploadUrl: '/api/upload-token', multipart: true })
+            uploadedByIndex[index] = { file, type, url: blob.url }
+            completedUploads += 1
+            setSaveProgress({ phase: 'uploading', completed: completedUploads, total: mediaFiles.length })
+          } catch (error) { uploadError = error; return }
+        }
+      })
+      await Promise.all(workers)
+      if (uploadError) throw uploadError
+      const uploaded = uploadedByIndex.filter((item): item is { file: File; type: string; url: string } => Boolean(item))
       const uploadedImages = uploaded.filter(({ type }) => type.startsWith('image/')).map(({ url }) => url)
       const uploadedVideo = uploaded.find(({ type }) => type.startsWith('video/'))?.url
       if (uploadedImages.length) imageUrl = uploadedImages[0]
       if (uploadedVideo) videoUrl = uploadedVideo
 
+      const propertyId = editingCode || crypto.randomUUID()
+      const previous = manageProperties.find((property) => property.code === propertyId)
+      const nextPhotos = [...new Set([...existingPhotos, ...uploadedImages, imageUrl].filter(Boolean))]
+      const location = values.localizacao.trim()
+      const optimisticProperty: Property = {
+        code: propertyId, title: values.titulo, type: values.categoria, purpose: previous?.purpose || 'Venda',
+        city: location || previous?.city || '', neighborhood: previous?.neighborhood || '', address: location || previous?.address || '',
+        price: parseAdminNumber(values.preco), bedrooms: parseAdminNumber(values.quartos), bathrooms: parseAdminNumber(values.banheiros),
+        parkingSpaces: parseAdminNumber(values.vagas), area: parseAdminNumber(values.area), builtArea: previous?.builtArea ?? null, lotArea: previous?.lotArea ?? null,
+        description: values.descricao, mainImage: imageUrl || previous?.mainImage || '', photos: nextPhotos, video: videoUrl,
+        broker: previous?.broker || 'Ferreira', creci: previous?.creci || '', whatsapp: previous?.whatsapp || '',
+        status: values.ativo === 'sim' ? 'Ativo' : 'Oculto', featured: previous?.featured || false,
+        features: previous?.features || [], palette: previous?.palette || [], condominiumFee: previous?.condominiumFee ?? null,
+        propertyTax: previous?.propertyTax ?? null, latitude: previous?.latitude ?? null, longitude: previous?.longitude ?? null,
+      }
+      setSaveProgress({ phase: 'saving', completed: mediaFiles.length, total: mediaFiles.length })
       const response = await fetch('/api/admin-property', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, imagem: imageUrl, imagens: [...new Set([...existingPhotos, ...uploadedImages, imageUrl].filter(Boolean))].join(' | '), video: videoUrl, midias: uploaded.map(({ url }) => url).join(' | '), id: editingCode || crypto.randomUUID(), action: editingCode ? 'update_property' : 'create_property' }),
+        body: JSON.stringify({ ...values, imagem: imageUrl, imagens: nextPhotos.join(' | '), video: videoUrl, midias: uploaded.map(({ url }) => url).join(' | '), id: propertyId, action: editingCode ? 'update_property' : 'create_property' }),
       })
       const body = await response.json().catch(() => ({}))
       if (!response.ok) {
         if (response.status === 401) setAuthState('anonymous')
-        throw new Error(body.error || 'Não foi possível salvar o imóvel.')
+        throw new Error(body.error || 'N\u00e3o foi poss\u00edvel salvar o im\u00f3vel.')
       }
 
+      const nextManageProperties = wasEditing
+        ? manageProperties.map((property) => property.code === propertyId ? optimisticProperty : property)
+        : [...manageProperties, optimisticProperty]
+      setManageProperties(nextManageProperties)
+      writeManageCache(nextManageProperties)
       setValues(initialValues)
       setEditingCode('')
       setExistingPhotos([])
       manageLoaded.current = false
       setMediaFiles([])
+      setSaveProgress(null)
       setStatus('success')
       notify('success', wasEditing ? 'Im\u00f3vel atualizado com sucesso.' : 'Im\u00f3vel adicionado com sucesso.')
-      setManageProperties([])
       setManageSearch('')
       setManageVisibility('all')
       setManageType('')
       setView('manage')
     } catch (error) {
       setStatus('error')
+      setSaveProgress(null)
       notify('error', error instanceof Error ? error.message : 'N\u00e3o foi poss\u00edvel salvar o im\u00f3vel.')
     }
   }
@@ -415,7 +499,9 @@ export function Admin() {
       const body = await response.json().catch(() => ({}))
       if (response.status === 401) setAuthState('anonymous')
       if (!response.ok || body.ok !== true || body.exists !== false) throw new Error(body.error || 'A exclusão não foi confirmada. Tente novamente.')
-      setManageProperties((current) => current.filter((item) => item.code.trim().toLowerCase() !== property.code.trim().toLowerCase()))
+      const nextProperties = manageProperties.filter((item) => item.code.trim().toLowerCase() !== property.code.trim().toLowerCase())
+      setManageProperties(nextProperties)
+      writeManageCache(nextProperties)
       setPendingDelete(null)
       notify(body.externalMedia ? 'warning' : 'success', body.externalMedia ? 'Imóvel excluído. Links externos saíram da planilha, mas os arquivos continuam no provedor original.' : 'Imóvel excluído com sucesso.')
     } catch (error) {
@@ -501,7 +587,9 @@ export function Admin() {
                   <button type='button' className='admin-manage-add' onClick={startAdding}><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 5v14M5 12h14' /></svg> Adicionar im&oacute;vel</button>
                 </div>
                 <div className='admin-manage-grid'>
-                  {manageStatus === 'loading' && <p role='status'>Carregando im&oacute;veis...</p>}
+                  {manageStatus === 'loading' && <div className='admin-manage-skeleton' role='status' aria-label='Carregando im&oacute;veis'>{Array.from({ length: 5 }, (_, index) => <div key={index}><i /><span><b /><b /><b /></span><em /></div>)}</div>}
+                  {manageStatus === 'refreshing' && <p className='admin-manage-refreshing' role='status'>Atualizando lista...</p>}
+                  {manageStatus === 'error' && <div className='admin-manage-error' role='alert'><p>N&atilde;o foi poss&iacute;vel carregar a lista de im&oacute;veis.</p><button type='button' onClick={() => { manageLoaded.current = false; setManageStatus('idle') }}>Tentar novamente</button></div>}
                   
                   {manageStatus !== 'loading' && manageStatus !== 'error' && filteredManageProperties.length === 0 && <p className='admin-manage-empty'>{manageProperties.length ? 'Nenhum im\u00f3vel corresponde aos filtros.' : 'Ainda n\u00e3o h\u00e1 im\u00f3veis cadastrados.'}</p>}
                   {manageStatus !== 'loading' && manageStatus !== 'error' && filteredManageProperties.map((property) => {
@@ -513,13 +601,14 @@ export function Admin() {
                         {isPendingDelete ? <><strong>Excluir im&oacute;vel definitivamente?</strong><small>&ldquo;{property.title}&rdquo; e suas m&iacute;dias ser&atilde;o removidas.</small></> : <><span>{property.code} &middot; {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Pre\u00e7o sob consulta'}</small><small className={'admin-manage-card__status' + (isActive ? '' : ' is-hidden')}>{isActive ? 'Ativo no site' : 'Oculto no site'}</small></>}
                       </div>
                       <div className='admin-manage-card__actions'>
-                        {isPendingDelete ? <><button type='button' disabled={deleting} onClick={() => { setPendingDelete(null); notify('info', 'Exclus\u00e3o cancelada.') }}>Cancelar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo...' : 'Sim, excluir'}</button></> : <><button type='button' disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}
+                        {isPendingDelete ? <><button type='button' disabled={deleting} onClick={() => { setPendingDelete(null); notify('info', 'Exclus\u00e3o cancelada.') }}>Cancelar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo e atualizando planilha...' : 'Sim, excluir'}</button></> : <><button type='button' disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}
                       </div>
                     </article>
                   })}
                 </div>
               </div>
             ) : <form className="admin-form" onSubmit={handleSubmit}>
+              {status === 'saving' && saveProgress && <div className='admin-save-progress admin-form__wide' role='status' aria-live='polite'><strong>{saveProgress.phase === 'uploading' ? `Enviando m&iacute;dia ${saveProgress.completed} de ${saveProgress.total}` : 'Salvando dados do im&oacute;vel...'}</strong>{saveProgress.phase === 'uploading' && <progress value={saveProgress.completed} max={saveProgress.total} />}</div>}
               <label>Status<select value={values.ativo} onChange={(event) => update('ativo', event.target.value)}><option value="sim">Ativo no site</option><option value="não">Oculto</option></select></label>
               <label>Categoria<select value={values.categoria} onChange={(event) => update('categoria', event.target.value)}><option>Casa</option><option>Apartamento</option><option>Refúgio</option></select></label>
               <label>Título<input value={values.titulo} onChange={(event) => update('titulo', event.target.value)} required /></label>

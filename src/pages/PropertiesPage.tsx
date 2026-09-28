@@ -34,13 +34,13 @@ export function PropertiesPage() {
       <main id="conteudo" className="catalog-page">
         <section className="catalog-hero">
           <div><span className="section-kicker">Catálogo Ferreira</span><h1>Encontre um imóvel que faça <em>sentido para você.</em></h1></div>
-          <div className="catalog-hero__meta"><p>Use os filtros para reduzir a busca e abra cada ficha para ver detalhes e falar diretamente pelo WhatsApp.</p><div><strong>{String(filtered.length).padStart(2, '0')}</strong><span>{filtered.length === 1 ? 'imóvel encontrado' : 'imóveis encontrados'}</span></div></div>
+          <div className="catalog-hero__meta"><p>Use os filtros para reduzir a busca e abra cada ficha para ver detalhes e falar diretamente pelo WhatsApp.</p><div><strong>{loading ? '...' : String(filtered.length).padStart(2, '0')}</strong><span>{loading ? 'Carregando...' : filtered.length === 1 ? 'imóvel encontrado' : 'imóveis encontrados'}</span></div></div>
           {source === 'fallback' && !loading && <p className="catalog-source-note">Imóveis demonstrativos: eles aparecem apenas enquanto o Google Sheets não possui imóveis disponíveis ou não está conectado.</p>}
         </section>
         <div className="catalog-layout">
           <CatalogFilters properties={properties} filters={filters} onChange={setFilters} />
           <section className="catalog-results" aria-live="polite">
-            {filtered.length > 0 ? filtered.map((property) => <CatalogPropertyCard property={property} key={property.code} />) : (
+            {loading ? <div className="catalog-loading" role="status" aria-label="Carregando imoveis"><span className="sr-only">Carregando imoveis...</span>{Array.from({ length: 6 }, (_, index) => <div className="catalog-loading__card" key={index} aria-hidden="true"><div className="catalog-loading__media" /><div className="catalog-loading__body"><i /><i /><i /><strong /></div></div>)}</div> : filtered.length > 0 ? filtered.map((property) => <CatalogPropertyCard property={property} key={property.code} />) : (
               <div className="catalog-empty"><span>Sem resultados</span><h2>Nenhum imóvel combina com estes filtros.</h2><p>Limpe alguns critérios ou peça uma busca personalizada para o Ferreira.</p><div><button type="button" className="button button--dark" onClick={() => setFilters(emptyFilters)}>Limpar filtros</button><a className="button button--accent" href={buildWhatsAppUrl(whatsappMessage)} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('empty_results', filters)}>Pedir ajuda no WhatsApp ↗</a></div></div>
             )}
           </section>
