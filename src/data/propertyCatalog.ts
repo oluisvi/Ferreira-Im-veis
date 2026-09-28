@@ -140,6 +140,15 @@ function normalizeImageUrl(value: string) {
   return driveId ? `https://drive.google.com/uc?export=view&id=${driveId}` : url
 }
 
+export function isVideoUrl(value: string) {
+  if (!value) return false
+  try {
+    return /\.(mp4|webm|mov|m4v)$/i.test(new URL(value, 'https://ferreira.invalid').pathname)
+  } catch {
+    return false
+  }
+}
+
 function createRecord(headers: string[], row: string[]) {
   return headers.reduce<CsvRecord>((record, header, index) => {
     record[normalizeKey(header)] = String(row[index] ?? '').trim()
@@ -164,8 +173,9 @@ function normalizeFallbackProperty(record: CsvRecord): Property | null {
   // Linhas inativas continuam no exemplo da planilha, mas não aparecem no site.
   if (!code || !title || !ACTIVE_STATUS.has(normalizeKey(status))) return null
 
-  const photos = splitList(pick(record, 'Fotos', 'Galeria')).map(normalizeImageUrl)
-  const mainImage = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa')) || photos[0] || ''
+  const photos = splitList(pick(record, 'Fotos', 'Galeria')).map(normalizeImageUrl).filter((url) => url && !isVideoUrl(url))
+  const requestedCover = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa'))
+  const mainImage = requestedCover && !isVideoUrl(requestedCover) ? requestedCover : photos[0] || ''
   const uniquePhotos = [...new Set([mainImage, ...photos].filter(Boolean))]
 
   return {

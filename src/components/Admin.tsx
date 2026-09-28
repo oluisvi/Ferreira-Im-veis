@@ -462,7 +462,7 @@ export function Admin() {
           <section className="admin-panel">
             <button className="admin-back-button" type="button" onClick={() => { setSaveMessage(''); if (view === 'manage') setView('home'); else if (editingCode) setView('manage'); else setView('home') }}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7-7m-7 7 7 7" /></svg>
-              {view === 'manage' || !editingCode ? 'Voltar ao in&iacute;cio' : 'Voltar &agrave; lista'}
+              {view === 'manage' || !editingCode ? 'Voltar ao in\u00edcio' : 'Voltar \u00e0 lista'}
             </button>
             <header className="admin-header">
               <span>{view === 'manage' ? 'Catálogo · gerenciamento' : 'Catálogo · Google Sheets'}</span>

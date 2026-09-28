@@ -56,6 +56,11 @@ function normalizeImageUrl(value: unknown) {
   return driveId ? `https://drive.google.com/uc?export=view&id=${driveId}` : url
 }
 
+function isVideoUrl(value: string) {
+  if (!value) return false
+  try { return /\.(mp4|webm|mov|m4v)$/i.test(new URL(value, 'https://ferreira.invalid').pathname) } catch { return false }
+}
+
 function createRecord(headers: string[], row: unknown[]) {
   return headers.reduce((record: Record<string, string>, header, index) => { record[normalizeKey(header)] = String(row[index] ?? '').trim(); return record }, {})
 }
@@ -69,8 +74,9 @@ function pick(record: Record<string, string>, ...keys: string[]) {
 }
 
 function normalizeProperty(record: Record<string, string>, includeInactive = false) {
-  const photos = splitList(pick(record, 'Fotos', 'Galeria', 'imagens')).map(normalizeImageUrl)
-  const mainImage = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa', 'imagem')) || photos[0] || ''
+  const photos = splitList(pick(record, 'Fotos', 'Galeria', 'imagens')).map(normalizeImageUrl).filter((url) => url && !isVideoUrl(url))
+  const requestedCover = normalizeImageUrl(pick(record, 'Foto principal', 'FotoPrincipal', 'Capa', 'imagem'))
+  const mainImage = requestedCover && !isVideoUrl(requestedCover) ? requestedCover : photos[0] || ''
   const code = pick(record, 'Código', 'Codigo', 'Code', 'ID', 'Referência', 'Referencia')
   const title = pick(record, 'Título', 'Titulo', 'Nome')
   const status = pick(record, 'Status') || (normalizeKey(pick(record, 'ativo')) === 'nao' ? 'Oculto' : 'Ativo')

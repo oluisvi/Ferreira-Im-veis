@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
-import { buildPropertyWhatsAppUrl, formatArea, formatCurrency, getMapUrl, getPropertyLocation } from '../data/propertyCatalog'
+import { buildPropertyWhatsAppUrl, formatArea, formatCurrency, getMapUrl, getPropertyLocation, isVideoUrl } from '../data/propertyCatalog'
 import { useProperties } from '../hooks/useProperties'
 import { trackEvent, trackWhatsAppClick } from '../analytics/tracker'
 
@@ -19,7 +19,7 @@ export function PropertyDetailPage({ code }: { code: string }) {
 
   useEffect(() => {
     if (!property) return
-    setSelectedImage(property.mainImage || property.photos[0] || '')
+    setSelectedImage(property.video || property.mainImage || property.photos[0] || '')
     setImageIndex(0)
     document.title = `${property.title} | Ferreira Corretor de Imóveis`
     trackEvent('property_view', { propertyId: property.code, propertyType: property.type, city: property.city, neighborhood: property.neighborhood })
@@ -29,8 +29,8 @@ export function PropertyDetailPage({ code }: { code: string }) {
   if (!property) return <><Header variant="solid" /><main id="conteudo" className="property-not-found"><span>{source === 'fallback' ? 'Catálogo indisponível' : 'Catálogo Ferreira'}</span><h1>Imóvel não encontrado.</h1><p>Ele pode ter sido vendido, removido da planilha ou estar temporariamente indisponível.</p><a className="button button--dark" href="/imoveis">Voltar aos imóveis</a></main><Footer /></>
 
   const mapUrl = getMapUrl(property)
-  const photos = property.photos.length ? property.photos : [property.mainImage]
-  const galleryItems = [...photos.map((src) => ({ type: 'image' as const, src })), ...(property.video ? [{ type: 'video' as const, src: property.video }] : [])]
+  const photos = (property.photos.length ? property.photos : [property.mainImage]).filter((src) => src && !isVideoUrl(src))
+  const galleryItems = [...(property.video ? [{ type: 'video' as const, src: property.video }] : []), ...photos.map((src) => ({ type: 'image' as const, src }))]
   const selectImage = (index: number) => {
     const nextIndex = (index + galleryItems.length) % galleryItems.length
     setImageIndex(nextIndex)
