@@ -4,12 +4,6 @@ import App from './App'
 import { AnalyticsProvider } from './analytics/AnalyticsProvider'
 import './styles/tokens.css'
 import './styles/global.css'
-import './styles/hero.css'
-import './styles/properties.css'
-import './styles/catalog.css'
-import './styles/content.css'
-import './styles/motion.css'
-import './styles/admin.css'
 
 const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
 

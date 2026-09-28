@@ -7,6 +7,7 @@ import { buildWhatsAppUrl } from '../content/siteContent'
 import { emptyFilters, filterProperties, filtersFromSearchParams } from '../data/propertyCatalog'
 import { useProperties } from '../hooks/useProperties'
 import { trackEvent, trackWhatsAppClick } from '../analytics/tracker'
+import '../styles/catalog.css'
 
 export function PropertiesPage() {
   const { properties, source, loading } = useProperties()

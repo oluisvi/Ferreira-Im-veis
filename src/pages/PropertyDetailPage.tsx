@@ -4,6 +4,8 @@ import { Header } from '../components/Header'
 import { buildPropertyWhatsAppUrl, formatArea, formatCurrency, getMapUrl, getPropertyLocation, isVideoUrl } from '../data/propertyCatalog'
 import { useProperties } from '../hooks/useProperties'
 import { trackEvent, trackWhatsAppClick } from '../analytics/tracker'
+import { getResponsiveImageSources } from '../utils/responsiveImageSources'
+import '../styles/catalog.css'
 
 function Fact({ label, value }: { label: string; value: string | number | null }) {
   if (value === null || value === '') return null
@@ -46,10 +48,10 @@ export function PropertyDetailPage({ code }: { code: string }) {
         <div className="property-detail__topbar"><a href="/imoveis">← Voltar aos imóveis</a><span>{property.code}</span></div>
         <section className="property-detail__gallery" aria-label="Galeria do imóvel">
           <div className="property-detail__main-image" onPointerDown={(event) => { dragStartX.current = event.clientX }} onPointerUp={(event) => { if (dragStartX.current === null) return; const distance = event.clientX - dragStartX.current; dragStartX.current = null; if (Math.abs(distance) > 45) moveImage(distance < 0 ? 1 : -1) }} onPointerCancel={() => { dragStartX.current = null }}>
-            {galleryItems[imageIndex]?.type === 'video' ? <video key={selectedImage} src={selectedImage} controls playsInline preload="metadata" aria-label={`Video of ${property.title}`} /> : <img src={selectedImage || property.mainImage} alt={`${property.title} - photo ${imageIndex + 1}`} draggable="false" />}
+            {galleryItems[imageIndex]?.type === 'video' ? <video key={selectedImage} src={selectedImage} controls playsInline preload="metadata" aria-label={`Video of ${property.title}`} /> : <img src={selectedImage || property.mainImage} srcSet={getResponsiveImageSources(selectedImage || property.mainImage, [640, 960, 1280, 1600, 2000])} sizes="100vw" alt={`${property.title} - photo ${imageIndex + 1}`} loading="eager" fetchPriority="high" decoding="async" draggable="false" />}
             {galleryItems.length > 1 && <><button type="button" className="property-detail__gallery-control property-detail__gallery-control--prev" onClick={() => moveImage(-1)} aria-label="Previous media">‹</button><button type="button" className="property-detail__gallery-control property-detail__gallery-control--next" onClick={() => moveImage(1)} aria-label="Próxima foto">›</button><span className="property-detail__gallery-count">{String(imageIndex + 1).padStart(2, '0')} / {String(galleryItems.length).padStart(2, '0')}</span></>}
           </div>
-          {galleryItems.length > 1 && <div className="property-detail__thumbs" aria-label={`Galeria com ${galleryItems.length} itens`}>{galleryItems.map((item, index) => <button type="button" className={`${index === imageIndex ? 'is-active' : ''}${item.type === 'video' ? ' is-video' : ''}`} onClick={() => selectImage(index)} key={`${item.src}-${index}`} aria-label={item.type === 'video' ? 'Play property video' : `View photo ${index + 1} of ${photos.length}`}>{item.type === 'video' ? <><video src={item.src} muted playsInline preload="metadata" aria-hidden="true" /><span aria-hidden="true">PLAY</span></> : <img src={item.src} alt="" loading="lazy" />}</button>)}</div>}
+          {galleryItems.length > 1 && <div className="property-detail__thumbs" aria-label={`Galeria com ${galleryItems.length} itens`}>{galleryItems.map((item, index) => <button type="button" className={`${index === imageIndex ? 'is-active' : ''}${item.type === 'video' ? ' is-video' : ''}`} onClick={() => selectImage(index)} key={`${item.src}-${index}`} aria-label={item.type === 'video' ? 'Play property video' : `View photo ${index + 1} of ${photos.length}`}>{item.type === 'video' ? <><video src={item.src} muted playsInline preload="metadata" aria-hidden="true" /><span aria-hidden="true">PLAY</span></> : <img src={item.src} srcSet={getResponsiveImageSources(item.src, [160, 240, 320])} sizes="112px" alt="" loading="lazy" decoding="async" />}</button>)}</div>}
         </section>
         <section className="property-detail__intro">
           <div><span className="section-kicker">{property.type} · {property.purpose}</span><h1>{property.title}</h1><p>⌖ {getPropertyLocation(property)}</p></div>

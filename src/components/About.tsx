@@ -5,7 +5,7 @@ export function About() {
   return (
     <section className="about" id="sobre">
       <div className="about__image" data-reveal="from-left">
-        <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=88" alt="Interior residencial contemporâneo" loading="lazy" />
+        <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1120&q=88" srcSet="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=88 600w, https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=960&q=88 960w, https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1280&q=88 1280w, https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1600&q=88 1600w" sizes="(max-width: 720px) 100vw, 50vw" decoding="async" alt="Interior residencial contemporâneo" loading="lazy" />
         <span>Imóveis que combinam com os seus planos.</span>
       </div>
       <div className="about__copy">

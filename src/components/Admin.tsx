@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { type Property } from '../data/propertyCatalog'
 import { upload } from '@vercel/blob/client'
+import '../styles/admin.css'
 
 type AuthState = 'checking' | 'anonymous' | 'authenticated'
 type AdminView = 'home' | 'properties' | 'manage' | 'report'
@@ -596,7 +597,7 @@ export function Admin() {
                     const isPendingDelete = pendingDelete?.code === property.code
                     const isActive = ['ativo', 'active'].includes(property.status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
                     return <article key={property.code} className={isPendingDelete ? 'is-delete-pending' : ''}>
-                      <img src={property.mainImage} alt='' />
+                      <img src={property.mainImage} alt='' loading='lazy' decoding='async' />
                       <div className='admin-manage-card__info'>
                         {isPendingDelete ? <><strong>Excluir im&oacute;vel definitivamente?</strong><small>&ldquo;{property.title}&rdquo; e suas m&iacute;dias ser&atilde;o removidas.</small></> : <><span>{property.code} &middot; {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Pre\u00e7o sob consulta'}</small><small className={'admin-manage-card__status' + (isActive ? '' : ' is-hidden')}>{isActive ? 'Ativo no site' : 'Oculto no site'}</small></>}
                       </div>

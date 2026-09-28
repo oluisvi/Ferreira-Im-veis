@@ -1,6 +1,7 @@
 import type { PropertyItem } from '../content/siteContent'
 import { buildWhatsAppUrl } from '../content/siteContent'
 import { trackWhatsAppClick } from '../analytics/tracker'
+import { getResponsiveImageSources } from '../utils/responsiveImageSources'
 
 function formatCardPrice(value?: string) {
   if (!value) return ''
@@ -28,7 +29,7 @@ export function PropertyCard({ property, index }: { property: PropertyItem; inde
 
   return (
     <article className={`property property--${index + 1}`}>
-      <div className="property__image"><img src={property.image} alt={property.imageAlt} loading="lazy" /></div>
+      <div className="property__image"><img src={property.image} srcSet={getResponsiveImageSources(property.image)} sizes="(max-width: 720px) 84vw, (max-width: 1119px) 45vw, 32vw" alt={property.imageAlt} loading="lazy" decoding="async" /></div>
       <div className="property__meta"><span>{property.eyebrow}</span><span>0{index + 1}</span></div>
       <h3>{property.title}</h3>
       {!isConcept && (price || property.location) && <div className="property__details">{price && <strong className="property__price">{price}</strong>}{property.location && <span className="property__location">{property.location}</span>}</div>}

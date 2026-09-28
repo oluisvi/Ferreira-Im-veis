@@ -1,11 +1,12 @@
 import { buildPropertyWhatsAppUrl, formatArea, formatCurrency, getPropertyLocation, getPropertyRoute, type Property } from '../data/propertyCatalog'
 import { trackWhatsAppClick } from '../analytics/tracker'
+import { getResponsiveImageSources } from '../utils/responsiveImageSources'
 
 export function CatalogPropertyCard({ property }: { property: Property }) {
   return (
     <article className="catalog-card" data-reveal="rise">
       <a className="catalog-card__media" href={getPropertyRoute(property)}>
-        <img src={property.mainImage} alt={property.title} loading="lazy" decoding="async" />
+        <img src={property.mainImage} srcSet={getResponsiveImageSources(property.mainImage)} sizes="(max-width: 759px) 100vw, (max-width: 979px) 50vw, (max-width: 1299px) 34vw, 23vw" alt={property.title} loading="lazy" decoding="async" />
         <span className="catalog-card__code">{property.code}</span>
         {property.featured && <span className="catalog-card__featured">Destaque</span>}
         <span className="catalog-card__purpose">{property.purpose}</span>
