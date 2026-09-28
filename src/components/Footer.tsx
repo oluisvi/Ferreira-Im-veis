@@ -13,8 +13,8 @@ export function Footer() {
       <div className="footer__social">
         <strong>Redes e contato</strong>
         <a href={buildWhatsAppUrl('Olá, Ferreira! Gostaria de conversar sobre um imóvel.')} target="_blank" rel="noreferrer" onClick={() => trackWhatsAppClick('footer_link')}>WhatsApp <span>↗</span></a>
-        <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Instagram <span>↗</span></a>
-        <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Facebook <span>↗</span></a>
+        <a href="https://www.instagram.com/ferreiracij/" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Instagram <span>↗</span></a>
+        <a href="https://www.facebook.com/ferreiracij" target="_blank" rel="noreferrer" title="Adicionar o perfil oficial da Ferreira">Facebook <span>↗</span></a>
       </div>
       <div className="footer__contact">
         <strong>Atendimento</strong>
