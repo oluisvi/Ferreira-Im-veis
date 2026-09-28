@@ -306,7 +306,7 @@ export function Admin() {
       if (wasEditing) {
         setManageProperties([])
         setView('manage')
-      }
+      } else setView('home')
     } catch (error) {
       setStatus('error')
       setSaveMessage(error instanceof Error ? error.message : 'Não foi possível salvar o imóvel.')
@@ -440,14 +440,19 @@ export function Admin() {
               <span>Painel administrativo</span>
               <div className="admin-header__row"><div><h1>O que você deseja fazer?</h1><p>Escolha uma ação para administrar o catálogo da Ferreira Imóveis.</p></div><div className="admin-header__badge"><i />Sessão protegida</div></div>
             </header>
+            {saveMessage && status === 'success' && <p className="admin-home-feedback" role="status">{saveMessage}</p>}
             <div className="admin-home__actions">
-              <button type="button" onClick={() => { setEditingCode(''); setExistingPhotos([]); setValues(initialValues); setView('properties') }}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
-              <button type="button" onClick={() => setView('manage')}><span>02</span><strong>Editar imóvel</strong><small>Localizar um imóvel publicado e alterar seus dados.</small><b>→</b></button>
-              <button type="button" onClick={() => setView('manage')}><span>03</span><strong>Excluir imóvel</strong><small>Gerenciar e remover definitivamente um imóvel vendido.</small><b>→</b></button>
+              <button type="button" onClick={() => { setEditingCode(''); setExistingPhotos([]); setValues(initialValues); setMediaFiles([]); setMediaWarning(''); setStatus('idle'); setSaveMessage(''); setView('properties') }}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
+              <button type="button" onClick={() => { setStatus('idle'); setSaveMessage(''); setView('manage') }}><span>02</span><strong>Editar imóvel</strong><small>Localizar um imóvel publicado e alterar seus dados.</small><b>→</b></button>
+              <button type="button" onClick={() => { setStatus('idle'); setSaveMessage(''); setView('manage') }}><span>03</span><strong>Excluir imóvel</strong><small>Gerenciar e remover definitivamente um imóvel vendido.</small><b>→</b></button>
             </div>
           </section>
         ) : view === 'properties' || view === 'manage' ? (
           <section className="admin-panel">
+            <button className="admin-back-button" type="button" onClick={() => { setSaveMessage(''); if (view === 'manage') setView('home'); else if (editingCode) setView('manage'); else setView('home') }}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7-7m-7 7 7 7" /></svg>
+              {view === 'manage' || !editingCode ? 'Voltar ao in&iacute;cio' : 'Voltar &agrave; lista'}
+            </button>
             <header className="admin-header">
               <span>{view === 'manage' ? 'Catálogo · gerenciamento' : 'Catálogo · Google Sheets'}</span>
               <div className="admin-header__row"><div><h1>{view === 'manage' ? 'Gerenciar imóveis' : editingCode ? 'Editar imóvel' : 'Cadastro de imóveis'}</h1><p>{view === 'manage' ? 'Edite ou exclua definitivamente os imóveis publicados no catálogo.' : editingCode ? `Atualize os dados do imóvel ${editingCode} sem criar uma nova publicação.` : 'Adicione um novo imóvel ao catálogo conectado ao Google Sheets. A publicação segue o status definido abaixo.'}</p></div><div className="admin-header__badge"><i />Conectado ao fluxo de cadastro</div></div>

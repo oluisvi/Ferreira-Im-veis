@@ -40,6 +40,11 @@
 .admin-logout { justify-self:end; border:0; background:transparent; color:#766d64; font:inherit; font-size:.64rem; text-transform:uppercase; letter-spacing:.1em; cursor:pointer; }
 
 .admin-panel { padding-top:clamp(2rem,5vw,4.5rem); }
+.admin-back-button { display:inline-flex; align-items:center; gap:.55rem; min-height:2.6rem; margin:0 0 1.4rem; padding:.55rem .8rem .55rem .55rem; border:1px solid rgba(23,22,20,.15); border-radius:.3rem; background:rgba(255,253,249,.65); color:#62594f; font:inherit; font-size:.65rem; font-weight:700; letter-spacing:.06em; cursor:pointer; transition:background .18s ease,border-color .18s ease,color .18s ease; }
+.admin-back-button:hover { border-color:#a77f3e; background:#fffdfa; color:#171614; }
+.admin-back-button:focus-visible { outline:3px solid rgba(159,122,60,.35); outline-offset:2px; }
+.admin-back-button svg { width:1rem; height:1rem; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.admin-home-feedback { margin:1.5rem 0 0; padding:.85rem 1rem; border:1px solid rgba(82,115,74,.24); background:rgba(82,115,74,.08); color:#3f6039; font-size:.78rem; }
 .admin-header { margin-bottom:2rem; }
 .admin-header > span { display:block; margin-bottom:.85rem; color:#98743b; font-size:.62rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
 .admin-header__row { display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; }
