@@ -167,6 +167,9 @@ export function Admin() {
   const [saveMessage, setSaveMessage] = useState('')
   const [manageProperties, setManageProperties] = useState<Property[]>([])
   const [manageStatus, setManageStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [manageSearch, setManageSearch] = useState('')
+  const [manageVisibility, setManageVisibility] = useState<'all' | 'active' | 'hidden'>('all')
+  const [manageType, setManageType] = useState('')
   const manageLoaded = useRef(false)
   const [editingCode, setEditingCode] = useState('')
   const [pendingDelete, setPendingDelete] = useState<Property | null>(null)
@@ -180,6 +183,14 @@ export function Admin() {
   const [reportCache, setReportCache] = useState<Record<number, ClarityReport>>({})
 
   const report = reportCache[reportDays]
+  const filteredManageProperties = [...manageProperties].reverse().filter((property) => {
+    const query = manageSearch.trim().toLocaleLowerCase('pt-BR')
+    const searchable = [property.code, property.title, property.city, property.neighborhood].join(' ').toLocaleLowerCase('pt-BR')
+    const isActive = ['ativo', 'active'].includes(property.status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+    const matchesVisibility = manageVisibility === 'all' || (manageVisibility === 'active' ? isActive : !isActive)
+    return (!query || searchable.includes(query)) && matchesVisibility && (!manageType || property.type === manageType)
+  })
+  const manageTypes = [...new Set(manageProperties.map((property) => property.type).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 
   useEffect(() => {
     if (authState !== 'authenticated' || view !== 'manage' || manageStatus === 'loading' || manageLoaded.current) return
@@ -252,6 +263,7 @@ export function Admin() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const wasEditing = Boolean(editingCode)
     setStatus('saving')
     setSaveMessage('')
 
@@ -290,7 +302,11 @@ export function Admin() {
       setMediaFiles([])
       setMediaWarning('')
       setStatus('success')
-      setSaveMessage('Imóvel enviado para a planilha com sucesso.')
+      setSaveMessage(wasEditing ? 'Im\u00f3vel atualizado com sucesso.' : 'Im\u00f3vel enviado para a planilha com sucesso.')
+      if (wasEditing) {
+        setManageProperties([])
+        setView('manage')
+      }
     } catch (error) {
       setStatus('error')
       setSaveMessage(error instanceof Error ? error.message : 'Não foi possível salvar o imóvel.')
@@ -324,14 +340,20 @@ export function Admin() {
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files ? Array.from(event.target.files) : []
     const supported = selected.filter((file) => getMediaType(file))
-    const limited = supported.slice(0, 10)
+    const videos = supported.filter((file) => getMediaType(file)?.startsWith('video/'))
+    const images = supported.filter((file) => getMediaType(file)?.startsWith('image/'))
+    const limitedVideos = videos.slice(0, 10)
+    const limitedImages = images.slice(0, Math.max(0, 10 - limitedVideos.length))
+    const limited = [...limitedVideos, ...limitedImages]
     const unsupportedCount = selected.length - supported.length
-    const excessCount = supported.length - limited.length
+    const droppedVideoCount = videos.length - limitedVideos.length
+    const droppedImageCount = images.length - limitedImages.length
+    const messages = []
+    if (unsupportedCount) messages.push(unsupportedCount + ' arquivo(s) ignorado(s): formato n\u00e3o aceito.')
+    if (droppedImageCount && !droppedVideoCount) messages.push('Limite de 10 arquivos: removemos ' + droppedImageCount + ' imagem(ns) para manter todos os v\u00eddeos.')
+    else if (droppedVideoCount) messages.push('Limite de 10 arquivos: v\u00eddeos t\u00eam prioridade; ' + droppedVideoCount + ' v\u00eddeo(s) excedente(s) e ' + droppedImageCount + ' imagem(ns) n\u00e3o entraram.')
     setMediaFiles(limited)
-    setMediaWarning([
-      unsupportedCount ? unsupportedCount + ' arquivo(s) ignorado(s) por formato nÃ£o compatÃ­vel.' : '',
-      excessCount ? 'O limite Ã© 10 arquivos por imÃ³vel; ' + excessCount + ' arquivo(s) excedente(s) nÃ£o foram incluÃ­dos.' : '',
-    ].filter(Boolean).join(' '))
+    setMediaWarning(messages.join(' '))
   }
 
   function update(name: keyof typeof initialValues, value: string) {
@@ -339,7 +361,9 @@ export function Admin() {
   }
 
   function startEditing(property: Property) {
-    setValues({ ativo: 'sim', categoria: property.type || 'Casa', titulo: property.title, preco: property.price?.toString() || '', localizacao: [property.neighborhood, property.city].filter(Boolean).join(', '), area: property.area?.toString() || '', quartos: property.bedrooms?.toString() || '', banheiros: property.bathrooms?.toString() || '', vagas: property.parkingSpaces?.toString() || '', descricao: property.description, imagem: property.mainImage, video: property.video || '', link: '' })
+    const normalizedStatus = property.status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    const activeValue = ['ativo', 'active'].includes(normalizedStatus) ? 'sim' : 'n\u00e3o'
+    setValues({ ativo: activeValue, categoria: property.type || 'Casa', titulo: property.title, preco: property.price?.toString() || '', localizacao: [property.neighborhood, property.city].filter(Boolean).join(', '), area: property.area?.toString() || '', quartos: property.bedrooms?.toString() || '', banheiros: property.bathrooms?.toString() || '', vagas: property.parkingSpaces?.toString() || '', descricao: property.description, imagem: property.mainImage, video: property.video || '', link: '' })
     setExistingPhotos(property.photos)
     setEditingCode(property.code)
     setView('properties')
@@ -429,7 +453,35 @@ export function Admin() {
               <div className="admin-header__row"><div><h1>{view === 'manage' ? 'Gerenciar imóveis' : editingCode ? 'Editar imóvel' : 'Cadastro de imóveis'}</h1><p>{view === 'manage' ? 'Edite ou exclua definitivamente os imóveis publicados no catálogo.' : editingCode ? `Atualize os dados do imóvel ${editingCode} sem criar uma nova publicação.` : 'Adicione um novo imóvel ao catálogo conectado ao Google Sheets. A publicação segue o status definido abaixo.'}</p></div><div className="admin-header__badge"><i />Conectado ao fluxo de cadastro</div></div>
             </header>
 
-            {view === 'manage' ? <div className="admin-manage-grid">{manageStatus === 'loading' && <p>Carregando imóveis publicados…</p>}{manageStatus === 'error' && <p>Não foi possível carregar os imóveis agora.</p>}{manageStatus !== 'loading' && manageProperties.map((property) => { const isPendingDelete = pendingDelete?.code === property.code; return <article key={property.code} className={isPendingDelete ? 'is-delete-pending' : ''}><img src={property.mainImage} alt="" /><div className="admin-manage-card__info">{isPendingDelete ? <><strong>Excluir imóvel definitivamente?</strong><small>“{property.title}” e suas mídias serão removidos.</small></> : <><span>{property.code} · {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Preço sob consulta'}</small></>}</div><div className="admin-manage-card__actions">{isPendingDelete ? <><button type="button" disabled={deleting} onClick={() => setPendingDelete(null)}>Cancelar</button><button type="button" className="is-danger" disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo…' : 'Sim, excluir'}</button></> : <><button type="button" disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type="button" className="is-danger" disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}</div></article> })}</div> : <form className="admin-form" onSubmit={handleSubmit}>
+            {view === 'manage' ? (
+              <div className='admin-manage-list'>
+                {saveMessage && status === 'success' && <p className='admin-manage-feedback' role='status'>{saveMessage}</p>}
+                <div className='admin-manage-toolbar' role='search'>
+                  <label>Buscar im&oacute;vel<input type='search' value={manageSearch} onChange={(event) => setManageSearch(event.target.value)} placeholder='C&oacute;digo, nome, cidade ou bairro' /></label>
+                  <label>Status<select value={manageVisibility} onChange={(event) => setManageVisibility(event.target.value as 'all' | 'active' | 'hidden')}><option value='all'>Todos</option><option value='active'>Ativos</option><option value='hidden'>Ocultos</option></select></label>
+                  <label>Categoria<select value={manageType} onChange={(event) => setManageType(event.target.value)}><option value=''>Todas</option>{manageTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+                  <span className='admin-manage-order'>Mais recentes primeiro</span>
+                </div>
+                <div className='admin-manage-grid'>
+                  {manageStatus === 'loading' && <p role='status'>Carregando im&oacute;veis...</p>}
+                  {manageStatus === 'error' && <p role='alert'>N&atilde;o foi poss&iacute;vel carregar os im&oacute;veis agora.</p>}
+                  {manageStatus !== 'loading' && manageStatus !== 'error' && filteredManageProperties.length === 0 && <p className='admin-manage-empty'>{manageProperties.length ? 'Nenhum im\u00f3vel corresponde aos filtros.' : 'Ainda n\u00e3o h\u00e1 im\u00f3veis cadastrados.'}</p>}
+                  {manageStatus !== 'loading' && manageStatus !== 'error' && filteredManageProperties.map((property) => {
+                    const isPendingDelete = pendingDelete?.code === property.code
+                    const isActive = ['ativo', 'active'].includes(property.status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+                    return <article key={property.code} className={isPendingDelete ? 'is-delete-pending' : ''}>
+                      <img src={property.mainImage} alt='' />
+                      <div className='admin-manage-card__info'>
+                        {isPendingDelete ? <><strong>Excluir im&oacute;vel definitivamente?</strong><small>&ldquo;{property.title}&rdquo; e suas m&iacute;dias ser&atilde;o removidas.</small></> : <><span>{property.code} &middot; {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Pre\u00e7o sob consulta'}</small><small className={'admin-manage-card__status' + (isActive ? '' : ' is-hidden')}>{isActive ? 'Ativo no site' : 'Oculto no site'}</small></>}
+                      </div>
+                      <div className='admin-manage-card__actions'>
+                        {isPendingDelete ? <><button type='button' disabled={deleting} onClick={() => setPendingDelete(null)}>Cancelar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo...' : 'Sim, excluir'}</button></> : <><button type='button' disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}
+                      </div>
+                    </article>
+                  })}
+                </div>
+              </div>
+            ) : <form className="admin-form" onSubmit={handleSubmit}>
               <label>Status<select value={values.ativo} onChange={(event) => update('ativo', event.target.value)}><option value="sim">Ativo no site</option><option value="não">Oculto</option></select></label>
               <label>Categoria<select value={values.categoria} onChange={(event) => update('categoria', event.target.value)}><option>Casa</option><option>Apartamento</option><option>Refúgio</option></select></label>
               <label>Título<input value={values.titulo} onChange={(event) => update('titulo', event.target.value)} required /></label>
@@ -441,9 +493,9 @@ export function Admin() {
               <label>Vagas<input value={values.vagas} onChange={(event) => update('vagas', event.target.value)} /></label>
               <label className="admin-form__wide">Descrição<textarea value={values.descricao} onChange={(event) => update('descricao', event.target.value)} rows={5} /></label>
               <div className="admin-media-notice admin-form__wide" id="admin-media-note" role="note"><strong>Envie at&eacute; 10 arquivos por im&oacute;vel</strong><span>O limite inclui fotos e v&iacute;deos juntos. Formatos aceitos: JPG, PNG, WebP, AVIF, GIF, MP4 e WebM.</span></div>
-              <label className="admin-form__wide admin-media-field">Fotos e vídeos<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Selecione várias fotos ou vídeos. A primeira imagem será a capa.'}</small></label>
-              <label className="admin-form__wide admin-media-field">Selecionar pasta do imóvel<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Em Chrome/Edge, escolha a pasta completa; imagens e vídeos serão separados automaticamente.'}</small></label>
-              {mediaWarning && <p className="admin-form__wide" role="status">{mediaWarning}</p>}
+              <label className="admin-form__wide admin-media-field">Fotos e vídeos<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `Prontos para envio: ${mediaSummary(mediaFiles)}` : 'Selecione várias fotos ou vídeos. A primeira imagem será a capa.'}</small></label>
+              <label className="admin-form__wide admin-media-field">Selecionar pasta do imóvel<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>{mediaFiles.length ? `Prontos para envio: ${mediaSummary(mediaFiles)}` : 'Em Chrome/Edge, escolha a pasta completa; imagens e vídeos serão separados automaticamente.'}</small></label>
+              {mediaWarning && <p className="admin-form__wide admin-media-warning" role="status">{mediaWarning}</p>}
               <label className="admin-form__wide">Vídeo por URL (opcional)<input value={values.video} onChange={(event) => update('video', event.target.value)} placeholder="https://.../tour.mp4" /></label>
               <label className="admin-form__wide">Link da imagem (opcional)<input value={values.imagem} onChange={(event) => update('imagem', event.target.value)} /></label>
               <label className="admin-form__wide">Link do anúncio original<input value={values.link} onChange={(event) => update('link', event.target.value)} /></label>
