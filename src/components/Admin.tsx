@@ -303,10 +303,11 @@ export function Admin() {
       setMediaWarning('')
       setStatus('success')
       setSaveMessage(wasEditing ? 'Im\u00f3vel atualizado com sucesso.' : 'Im\u00f3vel enviado para a planilha com sucesso.')
-      if (wasEditing) {
-        setManageProperties([])
-        setView('manage')
-      } else setView('home')
+      setManageProperties([])
+      setManageSearch('')
+      setManageVisibility('all')
+      setManageType('')
+      setView('manage')
     } catch (error) {
       setStatus('error')
       setSaveMessage(error instanceof Error ? error.message : 'Não foi possível salvar o imóvel.')
@@ -370,6 +371,16 @@ export function Admin() {
     setSaveMessage(`Editando ${property.code}. O salvamento completo será enviado pelo mesmo cadastro.`)
   }
 
+  function startAdding() {
+    setEditingCode('')
+    setExistingPhotos([])
+    setValues(initialValues)
+    setMediaFiles([])
+    setMediaWarning('')
+    setStatus('idle')
+    setSaveMessage('')
+    setView('properties')
+  }
   async function deleteProperty(property: Property) {
     setPendingDelete(property)
   }
@@ -442,7 +453,7 @@ export function Admin() {
             </header>
             {saveMessage && status === 'success' && <p className="admin-home-feedback" role="status">{saveMessage}</p>}
             <div className="admin-home__actions">
-              <button type="button" onClick={() => { setEditingCode(''); setExistingPhotos([]); setValues(initialValues); setMediaFiles([]); setMediaWarning(''); setStatus('idle'); setSaveMessage(''); setView('properties') }}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
+              <button type="button" onClick={startAdding}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
               <button type="button" onClick={() => { setStatus('idle'); setSaveMessage(''); setView('manage') }}><span>02</span><strong>Editar imóvel</strong><small>Localizar um imóvel publicado e alterar seus dados.</small><b>→</b></button>
               <button type="button" onClick={() => { setStatus('idle'); setSaveMessage(''); setView('manage') }}><span>03</span><strong>Excluir imóvel</strong><small>Gerenciar e remover definitivamente um imóvel vendido.</small><b>→</b></button>
             </div>
@@ -466,6 +477,7 @@ export function Admin() {
                   <label>Status<select value={manageVisibility} onChange={(event) => setManageVisibility(event.target.value as 'all' | 'active' | 'hidden')}><option value='all'>Todos</option><option value='active'>Ativos</option><option value='hidden'>Ocultos</option></select></label>
                   <label>Categoria<select value={manageType} onChange={(event) => setManageType(event.target.value)}><option value=''>Todas</option>{manageTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
                   <span className='admin-manage-order'>Mais recentes primeiro</span>
+                  <button type='button' className='admin-manage-add' onClick={startAdding}><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 5v14M5 12h14' /></svg> Adicionar im&oacute;vel</button>
                 </div>
                 <div className='admin-manage-grid'>
                   {manageStatus === 'loading' && <p role='status'>Carregando im&oacute;veis...</p>}
