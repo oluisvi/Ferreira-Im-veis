@@ -6,6 +6,8 @@ type AuthState = 'checking' | 'anonymous' | 'authenticated'
 type AdminView = 'home' | 'properties' | 'manage' | 'report'
 type SaveStatus = 'idle' | 'saving' | 'success' | 'error'
 type ReportStatus = 'idle' | 'loading' | 'success' | 'error'
+type NotificationKind = 'success' | 'error' | 'info' | 'warning'
+type AdminNotification = { id: number; kind: NotificationKind; title: string; message: string }
 
 type ClarityPage = {
   url: string
@@ -151,20 +153,29 @@ function mediaSummary(files: File[]) {
   return [photos ? `${photos} foto${photos > 1 ? 's' : ''}` : '', videos ? `${videos} vídeo${videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')
 }
 
+function AdminToast({ notification, onDismiss }: { notification: AdminNotification | null; onDismiss: () => void }) {
+  if (!notification) return null
+  return <div className="admin-toast-region" aria-live={notification.kind === 'error' ? 'assertive' : 'polite'}>
+    <section className={`admin-toast admin-toast--${notification.kind}`} role={notification.kind === 'error' ? 'alert' : 'status'}>
+      <span className="admin-toast__mark" aria-hidden="true" />
+      <div className="admin-toast__copy"><strong>{notification.title}</strong><p>{notification.message}</p></div>
+      <button type="button" className="admin-toast__close" onClick={onDismiss} aria-label="Fechar notificação"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg></button>
+    </section>
+  </div>
+}
+
 export function Admin() {
   const [authState, setAuthState] = useState<AuthState>('checking')
   const [authConfigured, setAuthConfigured] = useState(true)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [loginError, setLoginError] = useState('')
+  const [notification, setNotification] = useState<AdminNotification | null>(null)
   const [loggingIn, setLoggingIn] = useState(false)
   const [view, setView] = useState<AdminView>('home')
 
   const [values, setValues] = useState(initialValues)
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
-  const [mediaWarning, setMediaWarning] = useState('')
   const [status, setStatus] = useState<SaveStatus>('idle')
-  const [saveMessage, setSaveMessage] = useState('')
   const [manageProperties, setManageProperties] = useState<Property[]>([])
   const [manageStatus, setManageStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [manageSearch, setManageSearch] = useState('')
@@ -179,10 +190,20 @@ export function Admin() {
 
   const [reportDays, setReportDays] = useState(3)
   const [reportStatus, setReportStatus] = useState<ReportStatus>('idle')
-  const [reportError, setReportError] = useState('')
   const [reportCache, setReportCache] = useState<Record<number, ClarityReport>>({})
 
   const report = reportCache[reportDays]
+  const notify = (kind: NotificationKind, message: string) => {
+    const titles: Record<NotificationKind, string> = { success: 'Concluído', error: 'Não foi possível concluir', info: 'Informação', warning: 'Atenção' }
+    setNotification({ id: Date.now() + Math.random(), kind, title: titles[kind], message })
+  }
+  const dismissNotification = () => setNotification(null)
+
+  useEffect(() => {
+    if (!notification) return
+    const timeout = window.setTimeout(() => setNotification((current) => current?.id === notification.id ? null : current), 6000)
+    return () => window.clearTimeout(timeout)
+  }, [notification])
   const filteredManageProperties = [...manageProperties].reverse().filter((property) => {
     const query = manageSearch.trim().toLocaleLowerCase('pt-BR')
     const searchable = [property.code, property.title, property.city, property.neighborhood].join(' ').toLocaleLowerCase('pt-BR')
@@ -203,7 +224,7 @@ export function Admin() {
         setManageProperties(Array.isArray(body.properties) ? body.properties : [])
         setManageStatus('idle')
       })
-      .catch(() => { manageLoaded.current = false; setManageStatus('error') })
+      .catch(() => { manageLoaded.current = true; setManageStatus('error'); notify('error', 'N\u00e3o foi poss\u00edvel carregar a lista de im\u00f3veis.') })
   }, [authState, view, manageStatus])
 
   useEffect(() => {
@@ -213,6 +234,7 @@ export function Admin() {
         const body = await response.json().catch(() => ({}))
         if (!active) return
         setAuthConfigured(body.configured !== false)
+        if (body.configured === false) notify('error', 'Configure ADMIN_USERNAME e ADMIN_PASSWORD nas vari\u00e1veis de ambiente para habilitar o acesso.')
         setAuthState(response.ok && body.authenticated ? 'authenticated' : 'anonymous')
       })
       .catch(() => {
@@ -227,6 +249,7 @@ export function Admin() {
     if (stored) {
       setReportCache((current) => ({ ...current, [reportDays]: stored }))
       setReportStatus('success')
+      notify('success', 'Relat\u00f3rio atualizado.')
       return
     }
     void loadReport(reportDays)
@@ -235,7 +258,7 @@ export function Admin() {
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoggingIn(true)
-    setLoginError('')
+    setNotification(null)
     try {
       const response = await fetch('/api/admin-login', {
         method: 'POST',
@@ -246,8 +269,9 @@ export function Admin() {
       if (!response.ok) throw new Error(body.error || 'Não foi possível entrar.')
       setPassword('')
       setAuthState('authenticated')
+      notify('success', 'Sess\u00e3o iniciada.')
     } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'Não foi possível entrar.')
+      notify('error', error instanceof Error ? error.message : 'N\u00e3o foi poss\u00edvel entrar.')
     } finally {
       setLoggingIn(false)
     }
@@ -259,13 +283,13 @@ export function Admin() {
     setReportCache({})
     setView('home')
     manageLoaded.current = false
+    notify('info', 'Sess\u00e3o encerrada.')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const wasEditing = Boolean(editingCode)
     setStatus('saving')
-    setSaveMessage('')
 
     try {
       let imageUrl = values.imagem
@@ -300,9 +324,8 @@ export function Admin() {
       setExistingPhotos([])
       manageLoaded.current = false
       setMediaFiles([])
-      setMediaWarning('')
       setStatus('success')
-      setSaveMessage(wasEditing ? 'Im\u00f3vel atualizado com sucesso.' : 'Im\u00f3vel enviado para a planilha com sucesso.')
+      notify('success', wasEditing ? 'Im\u00f3vel atualizado com sucesso.' : 'Im\u00f3vel adicionado com sucesso.')
       setManageProperties([])
       setManageSearch('')
       setManageVisibility('all')
@@ -310,14 +333,13 @@ export function Admin() {
       setView('manage')
     } catch (error) {
       setStatus('error')
-      setSaveMessage(error instanceof Error ? error.message : 'Não foi possível salvar o imóvel.')
+      notify('error', error instanceof Error ? error.message : 'N\u00e3o foi poss\u00edvel salvar o im\u00f3vel.')
     }
   }
 
   async function loadReport(days: number, force = false) {
     if (!force && reportCache[days]) return
     setReportStatus('loading')
-    setReportError('')
     try {
       const response = await fetch(`/api/admin-clarity?days=${days}${force ? '&refresh=1' : ''}`, {
         headers: { Accept: 'application/json' },
@@ -334,7 +356,7 @@ export function Admin() {
       setReportStatus('success')
     } catch (error) {
       setReportStatus('error')
-      setReportError(error instanceof Error ? error.message : 'Não foi possível carregar o relatório.')
+      notify('error', error instanceof Error ? error.message : 'N\u00e3o foi poss\u00edvel carregar o relat\u00f3rio.')
     }
   }
 
@@ -354,7 +376,7 @@ export function Admin() {
     if (droppedImageCount && !droppedVideoCount) messages.push('Limite de 10 arquivos: removemos ' + droppedImageCount + ' imagem(ns) para manter todos os v\u00eddeos.')
     else if (droppedVideoCount) messages.push('Limite de 10 arquivos: v\u00eddeos t\u00eam prioridade; ' + droppedVideoCount + ' v\u00eddeo(s) excedente(s) e ' + droppedImageCount + ' imagem(ns) n\u00e3o entraram.')
     setMediaFiles(limited)
-    setMediaWarning(messages.join(' '))
+    if (messages.length) notify('warning', messages.join(' '))
   }
 
   function update(name: keyof typeof initialValues, value: string) {
@@ -368,7 +390,7 @@ export function Admin() {
     setExistingPhotos(property.photos)
     setEditingCode(property.code)
     setView('properties')
-    setSaveMessage(`Editando ${property.code}. O salvamento completo será enviado pelo mesmo cadastro.`)
+    notify('info', 'Editando o im\u00f3vel ' + property.code + '.')
   }
 
   function startAdding() {
@@ -376,9 +398,7 @@ export function Admin() {
     setExistingPhotos([])
     setValues(initialValues)
     setMediaFiles([])
-    setMediaWarning('')
     setStatus('idle')
-    setSaveMessage('')
     setView('properties')
   }
   async function deleteProperty(property: Property) {
@@ -397,9 +417,9 @@ export function Admin() {
       if (!response.ok || body.ok !== true || body.exists !== false) throw new Error(body.error || 'A exclusão não foi confirmada. Tente novamente.')
       setManageProperties((current) => current.filter((item) => item.code.trim().toLowerCase() !== property.code.trim().toLowerCase()))
       setPendingDelete(null)
-      if (body.externalMedia) window.alert('Imóvel excluído. Links externos foram retirados da planilha; os arquivos no provedor externo não são apagados pelo Vercel Blob.')
+      notify(body.externalMedia ? 'warning' : 'success', body.externalMedia ? 'Imóvel excluído. Links externos saíram da planilha, mas os arquivos continuam no provedor original.' : 'Imóvel excluído com sucesso.')
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : 'Não foi possível concluir a exclusão. Tente novamente.')
+      notify('error', error instanceof Error ? error.message : 'Não foi possível concluir a exclusão. Tente novamente.')
     } finally {
       deleteInFlight.current = false
       setDeleting(false)
@@ -407,24 +427,24 @@ export function Admin() {
   }
 
   if (authState === 'checking') {
-    return <main className="admin-page admin-page--center"><div className="admin-auth-card"><span className="admin-eyebrow">Ferreira Imóveis</span><div className="admin-loading-mark" aria-hidden="true">F</div><p>Verificando acesso administrativo…</p></div></main>
+    return <main className="admin-page admin-page--center"><AdminToast notification={notification} onDismiss={dismissNotification} /><div className="admin-auth-card"><span className="admin-eyebrow">Ferreira Imóveis</span><div className="admin-loading-mark" aria-hidden="true">F</div><p>Verificando acesso administrativo…</p></div></main>
   }
 
   if (authState === 'anonymous') {
     return (
       <main className="admin-page admin-page--center">
+        <AdminToast notification={notification} onDismiss={dismissNotification} />
         <section className="admin-auth-card">
           <div className="admin-auth-card__brand"><span className="admin-brand-mark">F</span><div><span className="admin-eyebrow">Área restrita</span><strong>Ferreira Imóveis</strong></div></div>
           <div className="admin-auth-card__intro">
             <h1>Acesso administrativo</h1>
             <p>Entre para cadastrar imóveis e acompanhar o comportamento dos visitantes no site.</p>
           </div>
-          {!authConfigured && <div className="admin-alert admin-alert--error">Configure <code>ADMIN_USERNAME</code> e <code>ADMIN_PASSWORD</code> nas variáveis de ambiente antes de acessar.</div>}
           <form className="admin-login" onSubmit={handleLogin}>
             <label>Usuário<input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required /></label>
             <label>Senha<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
             <button type="submit" disabled={loggingIn || !authConfigured}>{loggingIn ? 'Entrando…' : 'Entrar no painel'} <span>→</span></button>
-            {loginError && <output>{loginError}</output>}
+            
           </form>
           <a className="admin-back-link" href="/">← Voltar ao site</a>
         </section>
@@ -434,6 +454,7 @@ export function Admin() {
 
   return (
     <main className="admin-page">
+      <AdminToast notification={notification} onDismiss={dismissNotification} />
       <section className="admin-shell">
         <header className="admin-topbar">
           <a className="admin-brand" href="/" aria-label="Voltar para Ferreira Imóveis"><span className="admin-brand-mark">F</span><span><strong>Ferreira</strong><small>Administração</small></span></a>
@@ -451,16 +472,16 @@ export function Admin() {
               <span>Painel administrativo</span>
               <div className="admin-header__row"><div><h1>O que você deseja fazer?</h1><p>Escolha uma ação para administrar o catálogo da Ferreira Imóveis.</p></div><div className="admin-header__badge"><i />Sessão protegida</div></div>
             </header>
-            {saveMessage && status === 'success' && <p className="admin-home-feedback" role="status">{saveMessage}</p>}
+            
             <div className="admin-home__actions">
               <button type="button" onClick={startAdding}><span>01</span><strong>Adicionar imóvel</strong><small>Cadastrar uma nova oportunidade no catálogo.</small><b>→</b></button>
-              <button type="button" onClick={() => { setStatus('idle'); setSaveMessage(''); setView('manage') }}><span>02</span><strong>Editar imóvel</strong><small>Localizar um imóvel publicado e alterar seus dados.</small><b>→</b></button>
-              <button type="button" onClick={() => { setStatus('idle'); setSaveMessage(''); setView('manage') }}><span>03</span><strong>Excluir imóvel</strong><small>Gerenciar e remover definitivamente um imóvel vendido.</small><b>→</b></button>
+              <button type="button" onClick={() => { setStatus('idle'); manageLoaded.current = false; setView('manage') }}><span>02</span><strong>Editar imóvel</strong><small>Localizar um imóvel publicado e alterar seus dados.</small><b>→</b></button>
+              <button type="button" onClick={() => { setStatus('idle'); manageLoaded.current = false; setView('manage') }}><span>03</span><strong>Excluir imóvel</strong><small>Gerenciar e remover definitivamente um imóvel vendido.</small><b>→</b></button>
             </div>
           </section>
         ) : view === 'properties' || view === 'manage' ? (
           <section className="admin-panel">
-            <button className="admin-back-button" type="button" onClick={() => { setSaveMessage(''); if (view === 'manage') setView('home'); else if (editingCode) setView('manage'); else setView('home') }}>
+            <button className="admin-back-button" type="button" onClick={() => { if (view === 'manage') { manageLoaded.current = false; setView('home') } else if (editingCode) setView('manage'); else setView('home') }}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m0 0 7-7m-7 7 7 7" /></svg>
               {view === 'manage' || !editingCode ? 'Voltar ao in\u00edcio' : 'Voltar \u00e0 lista'}
             </button>
@@ -471,7 +492,7 @@ export function Admin() {
 
             {view === 'manage' ? (
               <div className='admin-manage-list'>
-                {saveMessage && status === 'success' && <p className='admin-manage-feedback' role='status'>{saveMessage}</p>}
+                
                 <div className='admin-manage-toolbar' role='search'>
                   <label>Buscar im&oacute;vel<input type='search' value={manageSearch} onChange={(event) => setManageSearch(event.target.value)} placeholder='C&oacute;digo, nome, cidade ou bairro' /></label>
                   <label>Status<select value={manageVisibility} onChange={(event) => setManageVisibility(event.target.value as 'all' | 'active' | 'hidden')}><option value='all'>Todos</option><option value='active'>Ativos</option><option value='hidden'>Ocultos</option></select></label>
@@ -481,7 +502,7 @@ export function Admin() {
                 </div>
                 <div className='admin-manage-grid'>
                   {manageStatus === 'loading' && <p role='status'>Carregando im&oacute;veis...</p>}
-                  {manageStatus === 'error' && <p role='alert'>N&atilde;o foi poss&iacute;vel carregar os im&oacute;veis agora.</p>}
+                  
                   {manageStatus !== 'loading' && manageStatus !== 'error' && filteredManageProperties.length === 0 && <p className='admin-manage-empty'>{manageProperties.length ? 'Nenhum im\u00f3vel corresponde aos filtros.' : 'Ainda n\u00e3o h\u00e1 im\u00f3veis cadastrados.'}</p>}
                   {manageStatus !== 'loading' && manageStatus !== 'error' && filteredManageProperties.map((property) => {
                     const isPendingDelete = pendingDelete?.code === property.code
@@ -492,7 +513,7 @@ export function Admin() {
                         {isPendingDelete ? <><strong>Excluir im&oacute;vel definitivamente?</strong><small>&ldquo;{property.title}&rdquo; e suas m&iacute;dias ser&atilde;o removidas.</small></> : <><span>{property.code} &middot; {property.city}</span><strong>{property.title}</strong><small>{property.price ? `R$ ${property.price.toLocaleString('pt-BR')}` : 'Pre\u00e7o sob consulta'}</small><small className={'admin-manage-card__status' + (isActive ? '' : ' is-hidden')}>{isActive ? 'Ativo no site' : 'Oculto no site'}</small></>}
                       </div>
                       <div className='admin-manage-card__actions'>
-                        {isPendingDelete ? <><button type='button' disabled={deleting} onClick={() => setPendingDelete(null)}>Cancelar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo...' : 'Sim, excluir'}</button></> : <><button type='button' disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}
+                        {isPendingDelete ? <><button type='button' disabled={deleting} onClick={() => { setPendingDelete(null); notify('info', 'Exclus\u00e3o cancelada.') }}>Cancelar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void confirmDelete()}>{deleting ? 'Excluindo...' : 'Sim, excluir'}</button></> : <><button type='button' disabled={deleting} onClick={() => startEditing(property)}>Editar</button><button type='button' className='is-danger' disabled={deleting} onClick={() => void deleteProperty(property)}>Excluir</button></>}
                       </div>
                     </article>
                   })}
@@ -512,12 +533,11 @@ export function Admin() {
               <div className="admin-media-notice admin-form__wide" id="admin-media-note" role="note"><strong>Envie at&eacute; 10 arquivos por im&oacute;vel</strong><span>O limite inclui fotos e v&iacute;deos juntos. Formatos aceitos: JPG, PNG, WebP, AVIF, GIF, MP4 e WebM.</span></div>
               <label className="admin-form__wide admin-media-field">Fotos e vídeos<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `Prontos para envio: ${mediaSummary(mediaFiles)}` : 'Selecione várias fotos ou vídeos. A primeira imagem será a capa.'}</small></label>
               <label className="admin-form__wide admin-media-field">Selecionar pasta do imóvel<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>{mediaFiles.length ? `Prontos para envio: ${mediaSummary(mediaFiles)}` : 'Em Chrome/Edge, escolha a pasta completa; imagens e vídeos serão separados automaticamente.'}</small></label>
-              {mediaWarning && <p className="admin-form__wide admin-media-warning" role="status">{mediaWarning}</p>}
+              
               <label className="admin-form__wide">Vídeo por URL (opcional)<input value={values.video} onChange={(event) => update('video', event.target.value)} placeholder="https://.../tour.mp4" /></label>
               <label className="admin-form__wide">Link da imagem (opcional)<input value={values.imagem} onChange={(event) => update('imagem', event.target.value)} /></label>
               <label className="admin-form__wide">Link do anúncio original<input value={values.link} onChange={(event) => update('link', event.target.value)} /></label>
               <button type="submit" disabled={status === 'saving'}>{status === 'saving' ? 'Salvando…' : editingCode ? 'Atualizar imóvel' : 'Adicionar na planilha'} <span>→</span></button>
-              <output className={status === 'success' ? 'is-success' : ''}>{saveMessage}</output>
             </form>}
           </section>
         ) : (
@@ -536,11 +556,10 @@ export function Admin() {
             </div>
 
             {reportStatus === 'loading' && !report && <div className="admin-report__state"><span className="admin-loading-mark">F</span><strong>Carregando comportamento recente…</strong><p>Consultando os dados agregados do Microsoft Clarity.</p></div>}
-            {reportStatus === 'error' && !report && <div className="admin-alert admin-alert--error"><strong>Relatório indisponível.</strong><span>{reportError}</span></div>}
+            
 
             {report && (
               <>
-                {reportStatus === 'error' && <div className="admin-alert admin-alert--error"><strong>Não foi possível atualizar.</strong><span>{reportError} Os últimos dados carregados continuam abaixo.</span></div>}
                 <div className="admin-kpis">
                   <article><span>Sessões por página</span><strong>{report.summary.pageSessions.toLocaleString('pt-BR')}</strong><small>atividade acumulada nas URLs</small></article>
                   <article className="is-highlight"><span>Interesse em imóveis</span><strong>{report.summary.propertyIntentRate.toLocaleString('pt-BR')}%</strong><small>{report.summary.propertyIntentSessions.toLocaleString('pt-BR')} sessões em catálogo/detalhes</small></article>
