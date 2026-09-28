@@ -128,9 +128,26 @@ function storeReport(days: number, report: ClarityReport) {
   }
 }
 
+const MEDIA_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif',
+  mp4: 'video/mp4', webm: 'video/webm',
+}
+
+function getMediaType(file: File) {
+  const extension = file.name.split('.').pop()?.toLowerCase() || ''
+  const byExtension = MEDIA_TYPES[extension]
+  if (byExtension) return byExtension
+  return /^(image\/(jpeg|png|webp|avif|gif)|video\/(mp4|webm))$/.test(file.type) ? file.type : ''
+}
+
+function mediaPath(file: File) {
+  const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath
+  return (relativePath || file.name).replace(/\\/g, '/').split('/').filter((part) => part && part !== '.' && part !== '..').join('/')
+}
+
 function mediaSummary(files: File[]) {
-  const photos = files.filter((file) => file.type.startsWith('image/')).length
-  const videos = files.filter((file) => file.type.startsWith('video/')).length
+  const photos = files.filter((file) => getMediaType(file)?.startsWith('image/')).length
+  const videos = files.filter((file) => getMediaType(file)?.startsWith('video/')).length
   return [photos ? `${photos} foto${photos > 1 ? 's' : ''}` : '', videos ? `${videos} vídeo${videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')
 }
 
@@ -145,6 +162,7 @@ export function Admin() {
 
   const [values, setValues] = useState(initialValues)
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
+  const [mediaWarning, setMediaWarning] = useState('')
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [saveMessage, setSaveMessage] = useState('')
   const [manageProperties, setManageProperties] = useState<Property[]>([])
@@ -240,12 +258,17 @@ export function Admin() {
     try {
       let imageUrl = values.imagem
       let videoUrl = values.video
-      const uploaded = await Promise.all(mediaFiles.map(async (file) => {
-        const blob = await upload(`imoveis/${file.name}`, file, { access: 'public', handleUploadUrl: '/api/upload-token', multipart: true })
-        return { file, url: blob.url }
-      }))
-      const uploadedImages = uploaded.filter(({ file }) => file.type.startsWith('image/')).map(({ url }) => url)
-      const uploadedVideo = uploaded.find(({ file }) => file.type.startsWith('video/'))?.url
+      const uploaded: { file: File; type: string; url: string }[] = []
+      for (let index = 0; index < mediaFiles.length; index += 3) {
+        const batch = await Promise.all(mediaFiles.slice(index, index + 3).map(async (file) => {
+          const type = getMediaType(file)!
+          const blob = await upload('imoveis/' + mediaPath(file), file, { access: 'public', contentType: type, handleUploadUrl: '/api/upload-token', multipart: true })
+          return { file, type, url: blob.url }
+        }))
+        uploaded.push(...batch)
+      }
+      const uploadedImages = uploaded.filter(({ type }) => type.startsWith('image/')).map(({ url }) => url)
+      const uploadedVideo = uploaded.find(({ type }) => type.startsWith('video/'))?.url
       if (uploadedImages.length) imageUrl = uploadedImages[0]
       if (uploadedVideo) videoUrl = uploadedVideo
 
@@ -265,6 +288,7 @@ export function Admin() {
       setExistingPhotos([])
       manageLoaded.current = false
       setMediaFiles([])
+      setMediaWarning('')
       setStatus('success')
       setSaveMessage('Imóvel enviado para a planilha com sucesso.')
     } catch (error) {
@@ -298,7 +322,16 @@ export function Admin() {
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    setMediaFiles(event.target.files ? Array.from(event.target.files) : [])
+    const selected = event.target.files ? Array.from(event.target.files) : []
+    const supported = selected.filter((file) => getMediaType(file))
+    const limited = supported.slice(0, 10)
+    const unsupportedCount = selected.length - supported.length
+    const excessCount = supported.length - limited.length
+    setMediaFiles(limited)
+    setMediaWarning([
+      unsupportedCount ? unsupportedCount + ' arquivo(s) ignorado(s) por formato nÃ£o compatÃ­vel.' : '',
+      excessCount ? 'O limite Ã© 10 arquivos por imÃ³vel; ' + excessCount + ' arquivo(s) excedente(s) nÃ£o foram incluÃ­dos.' : '',
+    ].filter(Boolean).join(' '))
   }
 
   function update(name: keyof typeof initialValues, value: string) {
@@ -407,8 +440,10 @@ export function Admin() {
               <label>Banheiros<input value={values.banheiros} onChange={(event) => update('banheiros', event.target.value)} /></label>
               <label>Vagas<input value={values.vagas} onChange={(event) => update('vagas', event.target.value)} /></label>
               <label className="admin-form__wide">Descrição<textarea value={values.descricao} onChange={(event) => update('descricao', event.target.value)} rows={5} /></label>
-              <label className="admin-form__wide">Fotos e vídeos<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Selecione várias fotos ou um vídeo. O primeiro arquivo de imagem será a capa.'}</small></label>
-              <label className="admin-form__wide">Selecionar pasta do imóvel<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Em Chrome/Edge, escolha a pasta completa e o sistema separa fotos e vídeos.'}</small></label>
+              <div className="admin-media-notice admin-form__wide" id="admin-media-note" role="note"><strong>Envie at&eacute; 10 arquivos por im&oacute;vel</strong><span>O limite inclui fotos e v&iacute;deos juntos. Formatos aceitos: JPG, PNG, WebP, AVIF, GIF, MP4 e WebM.</span></div>
+              <label className="admin-form__wide admin-media-field">Fotos e vídeos<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Selecione várias fotos ou vídeos. A primeira imagem será a capa.'}</small></label>
+              <label className="admin-form__wide admin-media-field">Selecionar pasta do imóvel<input type="file" aria-describedby="admin-media-note" accept=".jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm" multiple {...({ webkitdirectory: 'true' } as any)} onChange={handleImageChange} /><small>{mediaFiles.length ? `Foram adicionados: ${mediaSummary(mediaFiles)}` : 'Em Chrome/Edge, escolha a pasta completa; imagens e vídeos serão separados automaticamente.'}</small></label>
+              {mediaWarning && <p className="admin-form__wide" role="status">{mediaWarning}</p>}
               <label className="admin-form__wide">Vídeo por URL (opcional)<input value={values.video} onChange={(event) => update('video', event.target.value)} placeholder="https://.../tour.mp4" /></label>
               <label className="admin-form__wide">Link da imagem (opcional)<input value={values.imagem} onChange={(event) => update('imagem', event.target.value)} /></label>
               <label className="admin-form__wide">Link do anúncio original<input value={values.link} onChange={(event) => update('link', event.target.value)} /></label>

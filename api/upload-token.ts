@@ -15,7 +15,7 @@ export default async function handler(request: any, response: any) {
       body,
       request,
       onBeforeGenerateToken: async () => ({
-        allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'],
+        allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'video/mp4', 'video/webm'],
         addRandomSuffix: true,
         maximumSizeInBytes: 100 * 1024 * 1024,
       }),
