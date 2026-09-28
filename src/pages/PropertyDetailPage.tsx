@@ -10,31 +10,6 @@ function Fact({ label, value }: { label: string; value: string | number | null }
   return <div className="property-detail__fact"><span>{label}</span><strong>{value}</strong></div>
 }
 
-function PropertyVideo({ src, title }: { src: string; title: string }) {
-  const [isVisible, setIsVisible] = useState(false)
-  const ref = useRef<HTMLVideoElement | null>(null)
-
-  useEffect(() => {
-    const element = ref.current
-    if (!element) return
-    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.35 })
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const element = ref.current
-    if (!element) return
-    if (isVisible) {
-      void element.play().catch(() => undefined)
-    } else {
-      element.pause()
-    }
-  }, [isVisible])
-
-  return <section className="property-detail__video" aria-label={`Vídeo de ${title}`}><video ref={ref} src={src} muted playsInline loop controls preload="metadata" poster={undefined} aria-label={`Vídeo de ${title}`} /></section>
-}
-
 export function PropertyDetailPage({ code }: { code: string }) {
   const { properties, loading, source } = useProperties()
   const property = useMemo(() => properties.find((item) => item.code.toLowerCase() === code.toLowerCase()), [properties, code])
@@ -55,11 +30,12 @@ export function PropertyDetailPage({ code }: { code: string }) {
 
   const mapUrl = getMapUrl(property)
   const photos = property.photos.length ? property.photos : [property.mainImage]
+  const galleryItems = [...photos.map((src) => ({ type: 'image' as const, src })), ...(property.video ? [{ type: 'video' as const, src: property.video }] : [])]
   const selectImage = (index: number) => {
-    const nextIndex = (index + photos.length) % photos.length
+    const nextIndex = (index + galleryItems.length) % galleryItems.length
     setImageIndex(nextIndex)
-    setSelectedImage(photos[nextIndex])
-    trackEvent(nextIndex === 0 ? 'property_gallery_open' : 'property_gallery_interaction', { propertyId: property.code, imageIndex: nextIndex + 1, totalImages: photos.length })
+    setSelectedImage(galleryItems[nextIndex].src)
+    trackEvent(nextIndex === 0 ? 'property_gallery_open' : 'property_gallery_interaction', { propertyId: property.code, imageIndex: nextIndex + 1, totalImages: galleryItems.length })
   }
   const moveImage = (step: number) => selectImage(imageIndex + step)
 
@@ -70,12 +46,11 @@ export function PropertyDetailPage({ code }: { code: string }) {
         <div className="property-detail__topbar"><a href="/imoveis">← Voltar aos imóveis</a><span>{property.code}</span></div>
         <section className="property-detail__gallery" aria-label="Galeria do imóvel">
           <div className="property-detail__main-image" onPointerDown={(event) => { dragStartX.current = event.clientX }} onPointerUp={(event) => { if (dragStartX.current === null) return; const distance = event.clientX - dragStartX.current; dragStartX.current = null; if (Math.abs(distance) > 45) moveImage(distance < 0 ? 1 : -1) }} onPointerCancel={() => { dragStartX.current = null }}>
-            <img src={selectedImage || property.mainImage} alt={`${property.title} — foto ${imageIndex + 1}`} draggable="false" />
-            {photos.length > 1 && <><button type="button" className="property-detail__gallery-control property-detail__gallery-control--prev" onClick={() => moveImage(-1)} aria-label="Foto anterior">‹</button><button type="button" className="property-detail__gallery-control property-detail__gallery-control--next" onClick={() => moveImage(1)} aria-label="Próxima foto">›</button><span className="property-detail__gallery-count">{String(imageIndex + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span></>}
+            {galleryItems[imageIndex]?.type === 'video' ? <video key={selectedImage} src={selectedImage} controls playsInline preload="metadata" aria-label={`Video of ${property.title}`} /> : <img src={selectedImage || property.mainImage} alt={`${property.title} - photo ${imageIndex + 1}`} draggable="false" />}
+            {galleryItems.length > 1 && <><button type="button" className="property-detail__gallery-control property-detail__gallery-control--prev" onClick={() => moveImage(-1)} aria-label="Previous media">‹</button><button type="button" className="property-detail__gallery-control property-detail__gallery-control--next" onClick={() => moveImage(1)} aria-label="Próxima foto">›</button><span className="property-detail__gallery-count">{String(imageIndex + 1).padStart(2, '0')} / {String(galleryItems.length).padStart(2, '0')}</span></>}
           </div>
-          {photos.length > 1 && <div className="property-detail__thumbs" aria-label={`${photos.length} fotos do imóvel`}>{photos.map((photo, index) => <button type="button" className={index === imageIndex ? 'is-active' : ''} onClick={() => selectImage(index)} key={`${photo}-${index}`} aria-label={`Ver foto ${index + 1} de ${photos.length}`}><img src={photo} alt="" loading="lazy" /></button>)}</div>}
+          {galleryItems.length > 1 && <div className="property-detail__thumbs" aria-label={`Galeria com ${galleryItems.length} itens`}>{galleryItems.map((item, index) => <button type="button" className={`${index === imageIndex ? 'is-active' : ''}${item.type === 'video' ? ' is-video' : ''}`} onClick={() => selectImage(index)} key={`${item.src}-${index}`} aria-label={item.type === 'video' ? 'Play property video' : `View photo ${index + 1} of ${photos.length}`}>{item.type === 'video' ? <><video src={item.src} muted playsInline preload="metadata" aria-hidden="true" /><span aria-hidden="true">PLAY</span></> : <img src={item.src} alt="" loading="lazy" />}</button>)}</div>}
         </section>
-        {property.video && <PropertyVideo src={property.video} title={property.title} />}
         <section className="property-detail__intro">
           <div><span className="section-kicker">{property.type} · {property.purpose}</span><h1>{property.title}</h1><p>⌖ {getPropertyLocation(property)}</p></div>
           <div className="property-detail__price"><span>Valor</span><strong>{formatCurrency(property.price)}</strong></div>

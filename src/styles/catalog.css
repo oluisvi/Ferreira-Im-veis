@@ -49,11 +49,15 @@
 .property-detail__topbar { min-height:3.7rem; padding:0 var(--pad); display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); background:var(--surface); font-size:.58rem; text-transform:uppercase; letter-spacing:.08em; }
 .property-detail__gallery { background:var(--surface); border-bottom:1px solid var(--line); }
 .property-detail__main-image { height:54vh; min-height:22rem; overflow:hidden; background:var(--paper-deep); }
-.property-detail__main-image img { width:100%; height:100%; object-fit:cover; }
+.property-detail__main-image img,.property-detail__main-image video { width:100%; height:100%; object-fit:cover; }
+.property-detail__main-image video { object-fit:contain; background:#111; }
 .property-detail__thumbs { display:flex; overflow-x:auto; gap:.55rem; padding:.65rem; background:var(--surface); }
 .property-detail__thumbs button { flex:0 0 5.5rem; height:4rem; border:0; padding:0; opacity:.58; overflow:hidden; background:var(--paper-deep); cursor:pointer; border-radius:.4rem; }
 .property-detail__thumbs button.is-active { opacity:1; outline:2px solid var(--accent); outline-offset:-2px; }
 .property-detail__thumbs img { width:100%; height:100%; object-fit:cover; }
+.property-detail__thumbs video { width:100%; height:100%; object-fit:cover; }
+.property-detail__thumbs button.is-video { position:relative; }
+.property-detail__thumbs button.is-video > span { position:absolute; inset:0; display:grid; place-items:center; color:white; font-size:1.1rem; text-shadow:0 1px 5px rgba(0,0,0,.8); background:rgba(20,19,16,.18); }
 .property-detail__intro { padding:3rem var(--pad); display:grid; gap:2rem; background:var(--surface); border-bottom:1px solid var(--line); }
 .property-detail__intro h1 { margin:.55rem 0 .9rem; max-width:12em; font-size:clamp(2.8rem,11vw,6.2rem); line-height:.94; letter-spacing:-.055em; }
 .property-detail__intro p { margin:0; color:var(--muted); }
@@ -125,9 +129,9 @@
 
 /* Clean, consistent property gallery: main image, controls, then the full thumbnail rail. */
 .property-detail__gallery { display:block; background:var(--surface); }
-.property-detail__main-image { position:relative; height:min(62vw, 42rem); min-height:20rem; touch-action:pan-y; cursor:grab; user-select:none; }
+.property-detail__main-image { position:relative; height:min(62vw, 42rem); min-height:clamp(13rem, 56vw, 20rem); touch-action:pan-y; cursor:grab; user-select:none; }
 .property-detail__main-image:active { cursor:grabbing; }
-.property-detail__main-image img { display:block; user-select:none; }
+.property-detail__main-image img,.property-detail__main-image video { display:block; user-select:none; }
 .property-detail__thumbs { display:flex; gap:.55rem; overflow-x:auto; padding:.85rem var(--pad); scrollbar-width:thin; scrollbar-color:var(--accent) transparent; }
 .property-detail__thumbs button { flex:0 0 clamp(5rem, 10vw, 7rem); height:clamp(3.6rem, 7vw, 5rem); border:1px solid transparent; border-radius:.45rem; opacity:.56; transition:opacity .2s ease, border-color .2s ease, transform .2s ease; }
 .property-detail__thumbs button:hover { opacity:.9; transform:translateY(-2px); }
